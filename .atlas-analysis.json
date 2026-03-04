@@ -1,0 +1,72 @@
+{
+  "projectType": "frontend",
+  "projectName": "Mi Ruta Directa",
+  "projectDescription": "A real-time route planning and address search application built with React, Leaflet, and OpenStreetMap.",
+  "theme": "palm",
+  "primaryColor": "#3B82F6",
+  "lightColor": "#60A5FA",
+  "darkColor": "#1E40AF",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Get Started",
+        "pages": [
+          "introduction",
+          "installation",
+          "quickstart"
+        ]
+      },
+      {
+        "group": "Core Features",
+        "pages": [
+          "features/address-search",
+          "features/route-calculation",
+          "features/map-display",
+          "features/user-location"
+        ]
+      },
+      {
+        "group": "Components",
+        "pages": [
+          "components/mapa-fondo",
+          "components/mapa-controles"
+        ]
+      },
+      {
+        "group": "Hooks",
+        "pages": [
+          "hooks/use-my-location"
+        ]
+      },
+      {
+        "group": "API Integration",
+        "pages": [
+          "api/photon",
+          "api/osrm"
+        ]
+      },
+      {
+        "group": "Development",
+        "pages": [
+          "development/architecture",
+          "development/technologies",
+          "development/known-issues"
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Real-time route calculation between two addresses",
+    "Interactive map with user location tracking",
+    "Address geocoding using Photon API",
+    "Route visualization with Leaflet and OpenStreetMap",
+    "Responsive design with Tailwind CSS"
+  ],
+  "publicApiSurface": [
+    "MapaFondo component",
+    "MapaControles component (ObtenerUbicacionUsuario, EnfocarRuta)",
+    "useMyLocation hook",
+    "ResultadoPhoton interface",
+    "RutaDatos interface"
+  ]
+}
