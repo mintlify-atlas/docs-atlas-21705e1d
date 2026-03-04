@@ -1,0 +1,331 @@
+---
+title: 'Application Architecture'
+description: 'Understand the architecture, component hierarchy, and data flow of Mi Ruta Directa'
+---
+
+## Overview
+
+Mi Ruta Directa is built using a modern React architecture with a component-based approach. The application follows a unidirectional data flow pattern with local state management using React hooks.
+
+## Project Structure
+
+The application follows a clean, organized folder structure:
+
+```
+src/
+├── components/          # React components
+│   ├── MapaFondo.tsx   # Map container component
+│   └── MapaControles.tsx # Map control utilities
+├── hooks/              # Custom React hooks
+│   └── useMyLocation.ts # Geolocation hook
+├── interface/          # TypeScript interfaces
+│   └── interfaces.ts   # Type definitions
+├── App.tsx             # Main application component
+├── main.tsx            # Application entry point
+└── index.css           # Global styles
+```
+
+<Note>
+  The application uses a flat component structure with clear separation between UI components, custom hooks, and type definitions.
+</Note>
+
+## Component Hierarchy
+
+The component tree is simple and efficient:
+
+```
+main.tsx (Entry Point)
+└── App.tsx (Root Component)
+    └── MapaFondo.tsx (Map Container)
+        ├── MapContainer (React Leaflet)
+        ├── TileLayer (OpenStreetMap)
+        ├── Marker (User & Route Points)
+        ├── Polyline (Route Path)
+        ├── ObtenerUbicacionUsuario (Control)
+        └── EnfocarRuta (Control)
+```
+
+### Component Responsibilities
+
+<AccordionGroup>
+  <Accordion title="App.tsx - Main Application Component">
+    **Location:** `src/App.tsx`
+    
+    The root component that manages:
+    - Form state (origin, destination, city)
+    - Route data state (coordinates, origin/destination points)
+    - Address geocoding via Photon API
+    - Route calculation via OSRM API
+    - User input handling and validation
+    
+    **Key State:**
+    ```typescript
+    const [direccionOrigen, setDireccionOrigen] = useState<string>("");
+    const [direccionDestino, setDireccionDestino] = useState<string>("");
+    const [ciudad, setCiudad] = useState<string>("");
+    const [datosRuta, setDatosRuta] = useState<RutaDatos>({
+      coordenadas: [],
+      origen: null,
+      destino: null,
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="MapaFondo.tsx - Map Container Component">
+    **Location:** `src/components/MapaFondo.tsx`
+    
+    Renders the interactive map with:
+    - Base map layer from OpenStreetMap
+    - User location marker
+    - Origin and destination markers
+    - Route polyline visualization
+    - Map controls for centering and focusing
+    
+    **Props Interface:**
+    ```typescript
+    interface MapaFondoProps {
+      datos: RutaDatos
+    }
+    ```
+    
+    Default center: `[10.9685, -74.7813]` (Barranquilla, Colombia)
+  </Accordion>
+
+  <Accordion title="MapaControles.tsx - Map Control Utilities">
+    **Location:** `src/components/MapaControles.tsx`
+    
+    Provides two utility components:
+    
+    1. **ObtenerUbicacionUsuario**: Flies the map to user's current location
+    2. **EnfocarRuta**: Automatically fits map bounds to show the entire route
+    
+    Both components use the `useMap` hook from React Leaflet and `useEffect` for reactive updates.
+  </Accordion>
+</AccordionGroup>
+
+## Data Flow
+
+The application follows a clear unidirectional data flow:
+
+<Steps>
+  <Step title="User Input">
+    User enters origin address, destination address, and city name in the form inputs.
+  </Step>
+  
+  <Step title="Form Submission">
+    The `handleSubmit` function in `App.tsx` is triggered, validating all fields are filled.
+  </Step>
+  
+  <Step title="Geocoding (Photon API)">
+    Two parallel API calls to Photon geocoding service:
+    ```typescript
+    const resOrigen = await fetch(
+      `https://photon.komoot.io/api/?q=${origenSeguro},${ciudad}&limit=1`
+    );
+    const resDestino = await fetch(
+      `https://photon.komoot.io/api/?q=${destinoSeguro},${ciudad}&limit=1`
+    );
+    ```
+    
+    Returns coordinates in `[longitude, latitude]` format.
+  </Step>
+  
+  <Step title="Route Calculation (OSRM API)">
+    Using the geocoded coordinates, request route from OSRM:
+    ```typescript
+    const resRuta = await fetch(
+      `https://router.project-osrm.org/route/v1/driving/${lonO},${latO};${lonD},${latD}?
+      overview=full&geometries=geojson`
+    );
+    ```
+    
+    Returns route geometry and metadata.
+  </Step>
+  
+  <Step title="State Update">
+    Update `datosRuta` state with coordinates and points:
+    ```typescript
+    setDatosRuta({
+      coordenadas: coordenadasRuta,
+      origen: [latO, lonO],
+      destino: [latD, lonD]
+    });
+    ```
+  </Step>
+  
+  <Step title="Map Rendering">
+    `MapaFondo` receives updated route data via props and re-renders:
+    - Polyline displays the route path
+    - Markers show origin and destination
+    - Map auto-focuses to show entire route
+  </Step>
+</Steps>
+
+<Info>
+  Notice the coordinate format conversion: Photon and OSRM use `[lon, lat]` while Leaflet expects `[lat, lon]`. The code handles this transformation at `src/App.tsx:38-48`.
+</Info>
+
+## State Management
+
+The application uses **React's built-in state management** with hooks:
+
+### Local Component State
+- `useState` for form inputs and route data in `App.tsx`
+- No global state management library (Redux, Zustand, etc.)
+- State flows down through props to child components
+
+### Custom Hooks
+
+**`useMyLocation` Hook** (`src/hooks/useMyLocation.ts`)
+
+Encapsulates browser geolocation API:
+```typescript
+export const useMyLocation = () => {
+  const [position, setPosition] = useState<LatLng | null>(null);
+  
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setPosition(new LatLng(latitude, longitude));
+      },
+      () => alert("No se pudo obtener tu ubicación"),
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      }
+    );
+  }, []);
+  
+  return { position };
+}
+```
+
+<Note>
+  The hook runs once on mount and requests high-accuracy location with a 5-second timeout.
+</Note>
+
+## API Integration Flow
+
+The application integrates with two external APIs:
+
+<CardGroup cols={2}>
+  <Card title="Photon Geocoding API" icon="location-dot">
+    **Purpose:** Convert addresses to coordinates
+    
+    **Endpoint:** `https://photon.komoot.io/api/`
+    
+    **Used at:** `src/App.tsx:30-34`
+    
+    **Returns:** Location features with coordinates and metadata
+  </Card>
+  
+  <Card title="OSRM Routing API" icon="route">
+    **Purpose:** Calculate driving routes
+    
+    **Endpoint:** `https://router.project-osrm.org/route/v1/driving/`
+    
+    **Used at:** `src/App.tsx:40-41`
+    
+    **Returns:** Route geometry in GeoJSON format
+  </Card>
+</CardGroup>
+
+### API Call Pattern
+
+```typescript
+// 1. Encode user input
+const origenSeguro = encodeURIComponent(direccionOrigen);
+
+// 2. Geocode addresses
+const resOrigen = await fetch(`https://photon.komoot.io/api/?q=${origenSeguro},${ciudad}&limit=1`);
+const dataOrigen: ResultadoPhoton = await resOrigen.json();
+
+// 3. Extract coordinates
+const [lonO, latO] = dataOrigen.features[0].geometry.coordinates;
+
+// 4. Calculate route
+const resRuta = await fetch(
+  `https://router.project-osrm.org/route/v1/driving/${lonO},${latO};${lonD},${latD}?
+  overview=full&geometries=geojson`
+);
+
+// 5. Transform coordinates for Leaflet
+const coordenadasRuta = ruta.geometry.coordinates.map(
+  (coord: [number, number]) => [coord[1], coord[0]]
+);
+```
+
+<Warning>
+  Both APIs are public services without authentication. They may have rate limits and availability constraints.
+</Warning>
+
+## Type System
+
+TypeScript interfaces ensure type safety across the application:
+
+**`ResultadoPhoton`** - Photon API response structure:
+```typescript
+export interface ResultadoPhoton {
+  features: {
+    geometry: {
+      coordinates: [number, number];
+    };
+    properties: {
+      name: string;
+      city?: string;
+      state?: string;
+      country?: string;
+    };
+  }[];
+}
+```
+
+**`RutaDatos`** - Route data structure:
+```typescript
+export interface RutaDatos {
+  coordenadas: [number, number][]; 
+  origen: [number, number] | null;
+  destino: [number, number] | null;
+}
+```
+
+Defined at: `src/interface/interfaces.ts`
+
+## Rendering Strategy
+
+The application uses React 19's concurrent features:
+
+```typescript
+// src/main.tsx
+creatRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+```
+
+- **StrictMode** enabled for development checks
+- **createRoot** API for concurrent rendering
+- Single-page application (SPA) architecture
+
+## Design Principles
+
+<CardGroup cols={2}>
+  <Card title="Component Composition" icon="puzzle-piece">
+    Small, focused components with clear responsibilities
+  </Card>
+  
+  <Card title="Props Down, Events Up" icon="arrows-up-down">
+    Data flows down via props, changes flow up via callbacks
+  </Card>
+  
+  <Card title="Separation of Concerns" icon="layer-group">
+    UI components separate from business logic and types
+  </Card>
+  
+  <Card title="Type Safety" icon="shield-check">
+    TypeScript interfaces for all data structures
+  </Card>
+</CardGroup>

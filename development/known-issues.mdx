@@ -1,0 +1,604 @@
+---
+title: 'Known Issues & Limitations'
+description: 'Understanding current limitations, known issues, and potential solutions for Mi Ruta Directa'
+---
+
+## Overview
+
+Mi Ruta Directa relies on external public APIs for geocoding and routing. While the application works well for many use cases, there are known limitations due to the nature of these free services and the challenges of address geocoding.
+
+<Note>
+  These issues are documented in the project README and are acknowledged by the development team. Despite these limitations, the application provides valuable routing functionality.
+</Note>
+
+## Known Issues
+
+### 1. Address Not Found
+
+<Warning>
+  **Issue:** The application frequently cannot find addresses entered by users.
+  
+  **Spanish:** "Muchas veces no encuentra las direcciones ingresadas."
+</Warning>
+
+**Symptoms:**
+- User enters a valid address but receives "No se encontró la ubicación" alert
+- No markers or route appear on the map
+- More common with:
+  - Informal addresses or local street names
+  - Addresses in small towns or rural areas
+  - Non-standardized address formats
+
+**Root Causes:**
+
+<AccordionGroup>
+  <Accordion title="OpenStreetMap Data Coverage">
+    The Photon geocoding API uses OpenStreetMap data, which varies in quality and completeness:
+    
+    - **Urban areas:** Generally well-mapped
+    - **Rural areas:** May have incomplete street data
+    - **Developing regions:** Address data may be sparse or informal
+    - **New developments:** May not be in OSM database yet
+    
+    **Example:**
+    ```typescript
+    // This might fail if the street isn't in OSM
+    const res = await fetch(
+      `https://photon.komoot.io/api/?q=Calle 45 #23-10,Barranquilla&limit=1`
+    );
+    ```
+  </Accordion>
+  
+  <Accordion title="Geocoding API Limitations">
+    Photon geocoding has inherent limitations:
+    
+    - Limited to data available in OpenStreetMap
+    - No fuzzy matching for misspellings
+    - Sensitive to exact address format
+    - Only returns 1 result (limit=1)
+    
+    **Code location:** `src/App.tsx:30-34`
+  </Accordion>
+  
+  <Accordion title="Query Format Constraints">
+    The current implementation may not handle all address variations:
+    
+    ```typescript
+    // Current format: address,city
+    const query = `${direccionOrigen},${ciudad}`;
+    
+    // May not work well with:
+    // - Addresses without street numbers
+    // - Landmarks instead of addresses
+    // - Abbreviated street types (Av., Cra., etc.)
+    ```
+  </Accordion>
+</AccordionGroup>
+
+**Potential Solutions:**
+
+<CodeGroup>
+```typescript Increase Result Limit
+// Instead of limit=1, try multiple results
+const res = await fetch(
+  `https://photon.komoot.io/api/?q=${address},${city}&limit=5`
+);
+
+// Let user choose from multiple matches
+if (data.features.length > 1) {
+  // Show picker UI
+}
+```
+
+```typescript Add Country Context
+// Improve accuracy by including country
+const query = `${direccionOrigen},${ciudad},Colombia`;
+const res = await fetch(
+  `https://photon.komoot.io/api/?q=${query}&limit=1`
+);
+```
+
+```typescript Fallback to Coordinates
+// Allow users to input coordinates directly
+if (isCoordinates(input)) {
+  const [lat, lon] = parseCoordinates(input);
+  // Skip geocoding
+}
+```
+
+```typescript Alternative Geocoding Service
+// Use multiple geocoding services as fallback
+try {
+  return await photonGeocode(address);
+} catch {
+  return await nominatimGeocode(address);
+}
+```
+</CodeGroup>
+
+### 2. Imprecise Location Placement
+
+<Warning>
+  **Issue:** Some addresses are placed near the correct location but not exactly where the user specified.
+  
+  **Spanish:** "Algunas direcciones no las pone exactas como el usuario las ingresó sino que las pone cerca."
+</Warning>
+
+**Symptoms:**
+- Marker appears on the correct street but wrong block
+- Location is close (50-200 meters) but not exact
+- Route starts/ends at nearby intersection instead of specific address
+
+**Root Causes:**
+
+<AccordionGroup>
+  <Accordion title="Address Interpolation">
+    Geocoding services often use **address interpolation**:
+    
+    - Street geometry is known
+    - Address numbers are estimated between known points
+    - Results in approximate rather than exact locations
+    
+    **Example:**
+    ```
+    Known: Calle 45 starts at #1 and ends at #100
+    Query: Calle 45 #23-10
+    Result: ~23% along the street (interpolated)
+    Actual: Could be different due to irregular numbering
+    ```
+  </Accordion>
+  
+  <Accordion title="Data Granularity">
+    OpenStreetMap may not have building-level data:
+    
+    - Street-level data: ✅ Often available
+    - Building numbers: ⚠️ Sometimes available
+    - Exact entrances: ❌ Rarely available
+    
+    Result: Geocoder returns best approximation
+  </Accordion>
+  
+  <Accordion title="Coordinate Precision">
+    The application uses single precision from API:
+    
+    ```typescript
+    const [lonO, latO] = dataOrigen.features[0].geometry.coordinates;
+    // Photon returns ~6 decimal places
+    // ±0.000001° ≈ ±11 cm precision
+    // But accuracy != precision
+    ```
+    
+    Precision is high, but **accuracy** depends on source data quality.
+  </Accordion>
+</AccordionGroup>
+
+**Impact:**
+
+<CardGroup cols={2}>
+  <Card title="Minor Issue" icon="check" color="green">
+    **For most routes:**
+    - Difference is negligible (< 100m)
+    - Route calculation still accurate
+    - User can identify approximate location
+  </Card>
+  
+  <Card title="Potential Problem" icon="exclamation-triangle" color="orange">
+    **For pedestrian navigation:**
+    - Wrong building entrance
+    - Missing turns to specific location
+    - May need manual adjustment
+  </Card>
+</CardGroup>
+
+**Potential Solutions:**
+
+<Steps>
+  <Step title="Visual Feedback">
+    Add a search radius circle to show uncertainty:
+    ```tsx
+    <Circle 
+      center={[latO, lonO]} 
+      radius={50}  // 50 meter uncertainty
+      color="blue"
+      opacity={0.3}
+    />
+    ```
+  </Step>
+  
+  <Step title="Address Verification">
+    Show the geocoded address name to user:
+    ```typescript
+    const geocodedName = dataOrigen.features[0].properties.name;
+    if (!userConfirms(`¿Es esto correcto? ${geocodedName}`)) {
+      // Allow manual adjustment
+    }
+    ```
+  </Step>
+  
+  <Step title="Manual Marker Adjustment">
+    Let users drag markers to correct location:
+    ```tsx
+    <Marker 
+      position={origin}
+      draggable={true}
+      eventHandlers={{
+        dragend: (e) => updateOrigin(e.target.getLatLng())
+      }}
+    />
+    ```
+  </Step>
+</Steps>
+
+### 3. Destination City Mismatch
+
+<Warning>
+  **Issue:** The destination is sometimes placed in a different city than the user specified.
+  
+  **Spanish:** "La dirección de destino la pone en otra ciudad distinta a la que el usuario ingresó."
+</Warning>
+
+**Symptoms:**
+- User enters "Calle 50, Barranquilla"
+- Result appears in different city (e.g., Bogotá, Medellín)
+- Route spans hundreds of kilometers unexpectedly
+- Destination marker far from expected region
+
+**Root Causes:**
+
+<AccordionGroup>
+  <Accordion title="Duplicate Street Names">
+    Many cities have streets with the same name:
+    
+    ```
+    "Calle 50" exists in:
+    - Barranquilla
+    - Bogotá
+    - Medellín
+    - Cartagena
+    - Dozens of other cities
+    ```
+    
+    Photon may return the "most important" result (usually largest city).
+  </Accordion>
+  
+  <Accordion title="City Name Ambiguity">
+    - Multiple places with same name
+    - Spelling variations ("Barranquilla" vs "B/quilla")
+    - Administrative level confusion (city vs. district vs. neighborhood)
+    
+    **Current query:**
+    ```typescript
+    // No explicit location bias
+    `https://photon.komoot.io/api/?q=${address},${city}&limit=1`
+    ```
+  </Accordion>
+  
+  <Accordion title="Ranking Algorithm">
+    Photon ranks results by importance:
+    
+    1. Population (larger cities ranked higher)
+    2. Administrative level
+    3. Exact vs. partial match
+    
+    A street in Bogotá may outrank the same street in a smaller city.
+  </Accordion>
+  
+  <Accordion title="Single Result Limitation">
+    ```typescript
+    // Only returns 1 result
+    const res = await fetch(`...&limit=1`);
+    
+    // No way to verify if it's the correct city
+    if (dataDestino.features.length > 0) {
+      // Assumes first result is correct ❌
+      const [lonD, latD] = dataDestino.features[0].geometry.coordinates;
+    }
+    ```
+    
+    Code location: `src/App.tsx:33-39`
+  </Accordion>
+</AccordionGroup>
+
+**Why This Is Critical:**
+
+This is the most severe issue because:
+- ❌ Route is completely wrong
+- ❌ Driving time/distance meaningless
+- ❌ User may not notice immediately
+- ❌ Wastes API calls and processing
+
+**Potential Solutions:**
+
+<CodeGroup>
+```typescript Verify City in Results
+// Check if result is in the correct city
+const dataDestino: ResultadoPhoton = await resDestino.json();
+
+if (dataDestino.features.length > 0) {
+  const result = dataDestino.features[0];
+  const resultCity = result.properties.city || 
+                     result.properties.name;
+  
+  if (!resultCity.toLowerCase().includes(ciudad.toLowerCase())) {
+    alert(`Advertencia: Resultado encontrado en ${resultCity}, ` +
+          `no en ${ciudad}. ¿Continuar?`);
+  }
+}
+```
+
+```typescript Add Bounding Box Filter
+// Limit search to Colombia or specific region
+const bbox = '74.0,-4.0,72.0,1.0'; // Colombia approx
+const res = await fetch(
+  `https://photon.komoot.io/api/?q=${address},${city}` +
+  `&bbox=${bbox}&limit=1`
+);
+```
+
+```typescript Use Location Bias
+// If user location available, bias results nearby
+const userLat = userPosition.lat;
+const userLon = userPosition.lng;
+
+const res = await fetch(
+  `https://photon.komoot.io/api/?q=${address},${city}` +
+  `&lat=${userLat}&lon=${userLon}&limit=5`
+);
+
+// Filter results within reasonable distance (e.g., 100km)
+const nearbyResults = data.features.filter(feature => {
+  const distance = calculateDistance(userPosition, feature.geometry.coordinates);
+  return distance < 100000; // 100km
+});
+```
+
+```typescript Display Multiple Options
+// Let user choose from multiple results
+const res = await fetch(
+  `https://photon.komoot.io/api/?q=${address},${city}&limit=5`
+);
+const data = await res.json();
+
+if (data.features.length > 1) {
+  const options = data.features.map(f => ({
+    name: f.properties.name,
+    city: f.properties.city,
+    coords: f.geometry.coordinates
+  }));
+  
+  // Show picker UI
+  const selected = await showLocationPicker(options);
+  return selected.coords;
+}
+```
+</CodeGroup>
+
+## API Limitations
+
+### Photon Geocoding API
+
+<Card title="Photon API Constraints" icon="map-location-dot">
+  **Provider:** Komoot (Free)
+  
+  **Limitations:**
+  - No authentication or API key
+  - Unknown rate limits
+  - Data quality varies by region
+  - Based on OpenStreetMap (community-maintained)
+  - No guaranteed SLA or uptime
+  - Limited query refinement options
+  
+  **Endpoint:** `https://photon.komoot.io/api/`
+</Card>
+
+**Known Constraints:**
+
+| Feature | Status | Impact |
+|---------|--------|--------|
+| Rate limiting | Unknown | May fail under heavy use |
+| Request authentication | None | No usage tracking |
+| Data freshness | Variable | May miss recent changes |
+| Error reporting | Basic | Hard to diagnose failures |
+| Regional coverage | Uneven | Better in Europe/US |
+
+### OSRM Routing API
+
+<Card title="OSRM API Constraints" icon="route">
+  **Provider:** Project OSRM (Free)
+  
+  **Limitations:**
+  - Public demo server (not for production)
+  - No guaranteed uptime
+  - Rate limiting not documented
+  - Based on OpenStreetMap road data
+  - No real-time traffic data
+  - Limited routing profile options
+  
+  **Endpoint:** `https://router.project-osrm.org/`
+</Card>
+
+**Known Constraints:**
+
+| Feature | Status | Impact |
+|---------|--------|--------|
+| Real-time traffic | ❌ Not available | Routes may not reflect congestion |
+| Turn-by-turn navigation | ⚠️ Basic | Limited instruction detail |
+| Alternative routes | ⚠️ Single route | No route options shown |
+| Route optimization | ✅ Yes | Shortest/fastest path |
+| Historical traffic | ❌ Not available | No time-based routing |
+
+<Warning>
+  **Production Considerations:**
+  
+  The OSRM public server explicitly states it's a **demo server** not intended for production use. For production applications, consider:
+  
+  - Self-hosting OSRM server
+  - Using commercial routing API (Google Maps, Mapbox, etc.)
+  - Implementing request caching
+</Warning>
+
+## Future Improvements
+
+Potential enhancements to address known issues:
+
+<AccordionGroup>
+  <Accordion title="Multi-Result Selection">
+    **Priority:** High
+    
+    **Implementation:**
+    ```typescript
+    // Show multiple geocoding results
+    const results = await geocodeAddress(address, city, { limit: 5 });
+    
+    // Display picker UI
+    const selected = await showLocationPicker(results);
+    ```
+    
+    **Benefits:**
+    - User can verify correct location
+    - Handles duplicate street names
+    - Reduces city mismatch errors
+  </Accordion>
+  
+  <Accordion title="Address Validation">
+    **Priority:** High
+    
+    **Implementation:**
+    ```typescript
+    // Verify geocoded result matches input city
+    if (result.properties.city !== inputCity) {
+      showWarning(`Found in ${result.properties.city}, not ${inputCity}`);
+    }
+    ```
+    
+    **Benefits:**
+    - Prevents city mismatch
+    - Builds user confidence
+    - Reduces wasted route calculations
+  </Accordion>
+  
+  <Accordion title="Draggable Markers">
+    **Priority:** Medium
+    
+    **Implementation:**
+    ```tsx
+    <Marker 
+      position={origin}
+      draggable={true}
+      eventHandlers={{
+        dragend: (e) => {
+          const newPos = e.target.getLatLng();
+          updateOrigin([newPos.lat, newPos.lng]);
+          recalculateRoute();
+        }
+      }}
+    />
+    ```
+    
+    **Benefits:**
+    - User can correct imprecise locations
+    - Visual feedback
+    - Improves route accuracy
+  </Accordion>
+  
+  <Accordion title="Coordinate Input Mode">
+    **Priority:** Low
+    
+    **Implementation:**
+    ```tsx
+    <Toggle label="Use coordinates" />
+    {useCoords && (
+      <>
+        <input placeholder="Latitude" />
+        <input placeholder="Longitude" />
+      </>
+    )}
+    ```
+    
+    **Benefits:**
+    - Bypass geocoding issues
+    - Useful for technical users
+    - Exact location specification
+  </Accordion>
+  
+  <Accordion title="Alternative Geocoding Services">
+    **Priority:** Medium
+    
+    **Implementation:**
+    ```typescript
+    async function geocodeWithFallback(address: string) {
+      try {
+        return await photonGeocode(address);
+      } catch {
+        console.log('Photon failed, trying Nominatim...');
+        return await nominatimGeocode(address);
+      }
+    }
+    ```
+    
+    **Benefits:**
+    - Higher success rate
+    - Redundancy if one service is down
+    - Better global coverage
+  </Accordion>
+  
+  <Accordion title="Caching Layer">
+    **Priority:** Medium
+    
+    **Implementation:**
+    ```typescript
+    // Cache successful geocoding results
+    const cache = new Map<string, Coordinates>();
+    
+    async function geocode(address: string) {
+      if (cache.has(address)) {
+        return cache.get(address);
+      }
+      
+      const result = await photonGeocode(address);
+      cache.set(address, result);
+      return result;
+    }
+    ```
+    
+    **Benefits:**
+    - Faster repeat queries
+    - Reduces API calls
+    - Improves reliability
+  </Accordion>
+</AccordionGroup>
+
+## Workarounds for Users
+
+Until improvements are implemented, users can work around issues:
+
+<Steps>
+  <Step title="Be Specific">
+    Include more context in addresses:
+    - ✅ "Carrera 43 #52-106, Barranquilla, Colombia"
+    - ❌ "Carrera 43, Barranquilla"
+  </Step>
+  
+  <Step title="Use Landmarks">
+    Try well-known locations:
+    - "Universidad del Norte, Barranquilla"
+    - "Centro Comercial Buenavista"
+  </Step>
+  
+  <Step title="Verify on Map">
+    Always check that markers are in the correct city:
+    - Zoom out to see full route
+    - Verify destination city name
+  </Step>
+  
+  <Step title="Try Variations">
+    If address not found, try:
+    - Different street name formats
+    - Abbreviations (Av., Cra., Cll.)
+    - Cross streets instead of numbers
+  </Step>
+</Steps>
+
+<Info>
+  Despite these limitations, Mi Ruta Directa successfully calculates routes for many common use cases, especially in well-mapped urban areas.
+</Info>

@@ -1,97 +1,250 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Mi Ruta Directa Documentation"
+mode: "custom"
 ---
 
-## Setting up
+<div className="relative bg-gradient-to-br from-[#1E40AF] via-[#3B82F6] to-[#60A5FA] dark:from-[#0f1117] dark:via-[#1a1d27] dark:to-[#242838] py-20">
+  <div className="max-w-6xl mx-auto px-6 lg:px-8">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+      <div className="lg:col-span-7">
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white dark:text-gray-100 mb-6">
+          Welcome to Mi Ruta Directa
+        </h1>
+        <p className="text-lg sm:text-xl text-white/90 dark:text-gray-300 max-w-2xl mb-8">
+          Build real-time route planning and address search applications with React, Leaflet, and OpenStreetMap. Get users from point A to point B with accurate geocoding and interactive maps.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          <a 
+            href="/quickstart" 
+            className="inline-block px-8 py-3 bg-white text-[#1E40AF] dark:bg-[#3B82F6] dark:text-white rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-[#60A5FA] transition-colors duration-300 no-underline"
+          >
+            Get Started
+          </a>
+          <a 
+            href="/features/address-search" 
+            className="inline-block px-8 py-3 border border-white/30 bg-white/10 text-white dark:border-gray-700 dark:bg-[#242838] dark:text-gray-100 rounded-lg font-semibold hover:bg-white/20 dark:hover:bg-[#2a2f3f] transition-colors duration-300 no-underline"
+          >
+            Explore Features
+          </a>
+        </div>
+      </div>
+      <div className="lg:col-span-5 hidden lg:block">
+        <div className="relative">
+          <div className="absolute inset-0 bg-white/10 dark:bg-white/5 rounded-2xl blur-3xl"></div>
+          <div className="relative bg-white/20 dark:bg-[#1a1d27]/80 backdrop-blur-sm rounded-2xl p-6 border border-white/30 dark:border-gray-700">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-3 h-3 rounded-full bg-red-400"></div>
+              <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+              <div className="w-3 h-3 rounded-full bg-green-400"></div>
+            </div>
+            <pre className="text-sm text-white dark:text-gray-300 overflow-x-auto">
+              <code>{`import { MapaFondo } from './components'
+import { useMyLocation } from './hooks'
 
-Get your documentation site up and running in minutes.
+function App() {
+  const { position } = useMyLocation()
+  
+  return <MapaFondo datos={routeData} />
+}`}</code>
+            </pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white mb-3">
+    Quick Start
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Get Mi Ruta Directa running in your development environment in just a few steps.
+  </p>
+  
+  <Steps>
+    <Step title="Clone the repository">
+      Start by cloning the Mi Ruta Directa repository to your local machine.
+      
+      ```bash
+      git clone https://github.com/Amurillo2005/Mi-Ruta-Directa
+      cd Mi-Ruta-Directa
+      ```
+    </Step>
+    
+    <Step title="Install dependencies">
+      Install all required packages using npm.
+      
+      ```bash
+      npm install
+      ```
+      
+      This will install React, Leaflet, Tailwind CSS, and all other dependencies needed to run the application.
+    </Step>
+    
+    <Step title="Start the development server">
+      Launch the development server to see the app in action.
+      
+      ```bash
+      npm run dev
+      ```
+      
+      Open your browser and navigate to the URL shown in the terminal (typically `http://localhost:5173`). You'll see the interactive map interface ready to use.
+    </Step>
+    
+    <Step title="Try it out">
+      Enter an origin address, destination address, and city name in the form fields. Click **Buscar** to calculate and display the route on the map.
+      
+      <Note>
+        The app uses your browser's geolocation API to center the map on your current location when you first load the page.
+      </Note>
+    </Step>
+  </Steps>
+</div>
 
-## Make it yours
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white mb-3">
+    Core Features
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Discover what makes Mi Ruta Directa a powerful routing solution.
+  </p>
+  
+  <CardGroup cols={2}>
+    <Card 
+      title="Address Geocoding" 
+      icon="location-dot" 
+      href="/features/address-search"
+    >
+      Convert user-entered addresses into precise coordinates using the Photon geocoding API.
+    </Card>
+    <Card 
+      title="Route Calculation" 
+      icon="route" 
+      href="/features/route-calculation"
+    >
+      Calculate optimal driving routes between two points with OSRM's powerful routing engine.
+    </Card>
+    <Card 
+      title="Interactive Maps" 
+      icon="map" 
+      href="/features/map-display"
+    >
+      Display routes and locations on beautiful, responsive maps powered by Leaflet and OpenStreetMap.
+    </Card>
+    <Card 
+      title="User Location" 
+      icon="location-crosshairs" 
+      href="/features/user-location"
+    >
+      Automatically detect and center the map on the user's current location.
+    </Card>
+  </CardGroup>
+</div>
 
-Design a docs site that looks great and empowers your users.
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white mb-3">
+    Components & APIs
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Explore the building blocks that power Mi Ruta Directa.
+  </p>
+  
+  <CardGroup cols={3}>
+    <Card 
+      title="MapaFondo" 
+      icon="layer-group" 
+      href="/components/mapa-fondo"
+    >
+      The main map component that renders the map container, tiles, markers, and route polylines.
+    </Card>
+    <Card 
+      title="MapaControles" 
+      icon="sliders" 
+      href="/components/mapa-controles"
+    >
+      Map control components for focusing on user location and fitting route bounds.
+    </Card>
+    <Card 
+      title="useMyLocation" 
+      icon="compass" 
+      href="/hooks/use-my-location"
+    >
+      React hook that accesses the browser's geolocation API to get the user's position.
+    </Card>
+    <Card 
+      title="Photon API" 
+      icon="magnifying-glass-location" 
+      href="/api/photon"
+    >
+      Geocoding service that converts addresses to geographic coordinates.
+    </Card>
+    <Card 
+      title="OSRM API" 
+      icon="map-location-dot" 
+      href="/api/osrm"
+    >
+      Routing service that calculates optimal paths between coordinates.
+    </Card>
+    <Card 
+      title="Architecture" 
+      icon="diagram-project" 
+      href="/development/architecture"
+    >
+      Understand how all the pieces fit together in Mi Ruta Directa.
+    </Card>
+  </CardGroup>
+</div>
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white mb-3">
+    Technologies
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Mi Ruta Directa is built with modern web technologies.
+  </p>
+  
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="p-6 bg-white dark:bg-[#1a1d27] border border-gray-200 dark:border-[#27272a] rounded-lg">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">React + TypeScript</h3>
+      <p className="text-sm text-gray-600 dark:text-gray-400">
+        Type-safe component architecture with modern React features and hooks.
+      </p>
+    </div>
+    <div className="p-6 bg-white dark:bg-[#1a1d27] border border-gray-200 dark:border-[#27272a] rounded-lg">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Leaflet + React Leaflet</h3>
+      <p className="text-sm text-gray-600 dark:text-gray-400">
+        Industry-leading open-source mapping library with React bindings.
+      </p>
+    </div>
+    <div className="p-6 bg-white dark:bg-[#1a1d27] border border-gray-200 dark:border-[#27272a] rounded-lg">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Tailwind CSS</h3>
+      <p className="text-sm text-gray-600 dark:text-gray-400">
+        Utility-first CSS framework for rapid UI development and responsive design.
+      </p>
+    </div>
+    <div className="p-6 bg-white dark:bg-[#1a1d27] border border-gray-200 dark:border-[#27272a] rounded-lg">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Vite</h3>
+      <p className="text-sm text-gray-600 dark:text-gray-400">
+        Lightning-fast build tool with hot module replacement for instant feedback.
+      </p>
+    </div>
+  </div>
+</div>
 
-## Create beautiful pages
-
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<div className="mt-20 mb-16 max-w-5xl mx-auto px-6">
+  <div className="bg-gradient-to-r from-[#3B82F6] to-[#60A5FA] dark:from-[#1E40AF] dark:to-[#3B82F6] rounded-2xl p-8 md:p-12 text-center">
+    <h2 className="text-2xl sm:text-3xl font-bold text-white dark:text-gray-100 mb-4">
+      Ready to build your route planning app?
+    </h2>
+    <p className="text-lg text-white/90 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+      Follow our quickstart guide to get Mi Ruta Directa running in minutes, or dive into the component documentation to customize it for your needs.
+    </p>
+    <a 
+      href="/quickstart" 
+      className="inline-block px-8 py-3 bg-white text-[#1E40AF] dark:bg-[#242838] dark:text-white rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-[#2a2f3f] transition-colors duration-300 no-underline"
+    >
+      Get Started Now
+    </a>
+  </div>
+</div>

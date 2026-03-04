@@ -1,0 +1,132 @@
+---
+title: Introduction
+description: Learn about Mi Ruta Directa, a real-time address search and route calculation application
+---
+
+# Welcome to Mi Ruta Directa
+
+Mi Ruta Directa is a lightweight, interactive web application for real-time address search and route calculation. Built with modern web technologies, it provides an intuitive interface for finding optimal routes between locations using open-source mapping services.
+
+## What is Mi Ruta Directa?
+
+Mi Ruta Directa ("My Direct Route") is a React-based mapping application that allows users to:
+
+- Enter origin and destination addresses
+- Automatically geocode addresses to coordinates
+- Calculate optimal driving routes in real-time
+- Visualize routes on an interactive map
+- See their current location on the map
+
+The application leverages powerful open-source APIs to deliver accurate routing without vendor lock-in or expensive API costs.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Real-Time Route Calculation" icon="route">
+    Calculate optimal driving routes instantly using OSRM (Open Source Routing Machine)
+  </Card>
+  
+  <Card title="Interactive Map" icon="map">
+    View routes on an interactive Leaflet map with pan, zoom, and marker controls
+  </Card>
+  
+  <Card title="Address Geocoding" icon="location-dot">
+    Convert text addresses to geographic coordinates using the Photon geocoding API
+  </Card>
+  
+  <Card title="Current Location" icon="location-crosshairs">
+    Automatically detect and display your current location on the map
+  </Card>
+</CardGroup>
+
+## Use Cases
+
+Mi Ruta Directa is perfect for:
+
+- **Personal Navigation**: Planning routes for trips and daily commutes
+- **Delivery Services**: Calculating optimal routes for delivery drivers
+- **Travel Planning**: Exploring different route options before a journey
+- **Educational Projects**: Learning about geocoding, routing algorithms, and mapping libraries
+- **Open Source Alternative**: Building custom routing solutions without proprietary APIs
+
+## Technology Stack
+
+Mi Ruta Directa is built with a modern, performant technology stack:
+
+### Frontend Framework
+- **React 19** - Component-based UI library with the latest features
+- **TypeScript** - Type-safe JavaScript for better developer experience
+- **Vite** - Lightning-fast build tool and development server
+
+### Styling
+- **Tailwind CSS 4** - Utility-first CSS framework for rapid UI development
+- **Lucide React** - Beautiful, consistent icon library
+
+### Mapping & Routing
+- **Leaflet** - Leading open-source JavaScript library for interactive maps
+- **React Leaflet** - React components for Leaflet maps
+- **Photon API** - Fast geocoding service for converting addresses to coordinates
+- **OSRM** - Open Source Routing Machine for route calculation
+
+### Development Tools
+- **ESLint** - Code linting for consistent code quality
+- **TypeScript ESLint** - TypeScript-specific linting rules
+- **SWC** - Rust-based compiler for faster builds
+
+<Info>
+  Mi Ruta Directa uses only open-source APIs and libraries, making it completely free to run and customize.
+</Info>
+
+## Architecture Overview
+
+The application follows a clean component architecture:
+
+```typescript
+src/
+├── App.tsx              # Main application component with form logic
+├── components/
+│   ├── MapaFondo.tsx    # Map container and visualization
+│   └── MapaControles.tsx # Map control utilities
+├── hooks/
+│   └── useMyLocation.ts  # Custom hook for geolocation
+└── interface/
+    └── interfaces.ts     # TypeScript type definitions
+```
+
+### Data Flow
+
+1. User enters origin, destination, and city in the form
+2. Addresses are geocoded to coordinates using Photon API
+3. Coordinates are sent to OSRM for route calculation
+4. Route geometry is rendered on the Leaflet map
+5. Map automatically fits bounds to show the entire route
+
+## Why Mi Ruta Directa?
+
+<Note>
+  **Open Source Philosophy**: Mi Ruta Directa is built entirely on open-source technologies, ensuring you have full control and no vendor lock-in.
+</Note>
+
+Unlike commercial mapping solutions, Mi Ruta Directa:
+
+- Has no API usage limits or costs
+- Runs completely client-side (no backend required)
+- Can be customized to your exact needs
+- Serves as a learning resource for mapping applications
+- Uses community-maintained map data (OpenStreetMap)
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Get Mi Ruta Directa running on your local machine
+  </Card>
+  
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Calculate your first route in under 5 minutes
+  </Card>
+</CardGroup>
+
+<Tip>
+  Ready to start? Follow our [installation guide](/installation) to set up the project in minutes.
+</Tip>

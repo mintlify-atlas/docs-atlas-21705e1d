@@ -1,0 +1,210 @@
+---
+title: 'Address Search & Geocoding'
+description: 'Learn how Mi Ruta Directa converts addresses into coordinates using the Photon API'
+---
+
+## Overview
+
+Mi Ruta Directa uses the **Photon API** (powered by Komoot) to convert user-entered addresses into geographic coordinates. This process, called geocoding, is essential for calculating routes between locations.
+
+## How It Works
+
+The address search functionality is implemented in the main `App.tsx` component as part of the form submission handler.
+
+<Steps>
+  <Step title="User Input Collection">
+    The app collects three inputs from the user:
+    - Origin address (e.g., "Calle 45")
+    - Destination address (e.g., "Avenida 30")
+    - City name (e.g., "Barranquilla")
+  </Step>
+  
+  <Step title="URL Encoding">
+    Addresses are sanitized using `encodeURIComponent` to handle special characters safely
+  </Step>
+  
+  <Step title="API Requests">
+    Two parallel requests are made to the Photon API - one for origin, one for destination
+  </Step>
+  
+  <Step title="Coordinate Extraction">
+    Geographic coordinates are extracted from the API response and used for route calculation
+  </Step>
+</Steps>
+
+## Implementation
+
+### State Management
+
+The component manages three form input states:
+
+```tsx src/App.tsx
+const [direccionOrigen, setDireccionOrigen] = useState<string>("");
+const [direccionDestino, setDireccionDestino] = useState<string>("");
+const [ciudad, setCiudad] = useState<string>("");
+```
+
+### Geocoding Process
+
+Here's the complete geocoding implementation from `App.tsx:19-54`:
+
+```tsx src/App.tsx
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  if (!direccionOrigen || !direccionDestino || !ciudad) {
+    alert("Información incompleta");
+    return
+  }
+
+  const origenSeguro = encodeURIComponent(direccionOrigen);
+  const destinoSeguro = encodeURIComponent(direccionDestino);
+
+  try {
+    const resOrigen = await fetch(`https://photon.komoot.io/api/?q=${origenSeguro},${ciudad}&limit=1`);
+    const dataOrigen: ResultadoPhoton = await resOrigen.json()
+
+    const resDestino = await fetch(`https://photon.komoot.io/api/?q=${destinoSeguro},${ciudad}&limit=1`);
+    const dataDestino: ResultadoPhoton = await resDestino.json()
+
+    if (dataOrigen.features.length > 0 && dataDestino.features.length > 0) {
+      const [lonO, latO] = dataOrigen.features[0].geometry.coordinates;
+      const [lonD, latD] = dataDestino.features[0].geometry.coordinates;
+      
+      // Route calculation happens here...
+    } else {
+      alert("No se encontró la ubicación");
+    }
+  } catch (e) {
+    console.log("Error al encontrar la ubicación: ", e)
+  }
+}
+```
+
+### ResultadoPhoton Interface
+
+The Photon API response is typed using this interface from `src/interface/interfaces.ts:1-13`:
+
+```tsx src/interface/interfaces.ts
+export interface ResultadoPhoton {
+  features: {
+    geometry: {
+      coordinates: [number, number];
+    };
+    properties: {
+      name: string;
+      city?: string;
+      state?: string;
+      country?: string;
+    };
+  }[];
+}
+```
+
+<Info>
+  The Photon API returns coordinates in `[longitude, latitude]` format, which differs from Leaflet's `[latitude, longitude]` format. The app handles this conversion when extracting coordinates.
+</Info>
+
+## API Parameters
+
+The Photon API is called with these parameters:
+
+| Parameter | Description | Example |
+|-----------|-------------|----------|
+| `q` | Search query (address + city) | `Calle 45,Barranquilla` |
+| `limit` | Maximum number of results | `1` |
+
+<CodeGroup>
+```bash Example Request
+https://photon.komoot.io/api/?q=Calle%2045,Barranquilla&limit=1
+```
+
+```json Example Response
+{
+  "features": [
+    {
+      "geometry": {
+        "coordinates": [-74.7813, 10.9685]
+      },
+      "properties": {
+        "name": "Calle 45",
+        "city": "Barranquilla",
+        "country": "Colombia"
+      }
+    }
+  ]
+}
+```
+</CodeGroup>
+
+## Validation & Error Handling
+
+### Input Validation
+
+The app performs basic validation before making API requests:
+
+```tsx src/App.tsx
+if (!direccionOrigen || !direccionDestino || !ciudad) {
+  alert("Información incompleta");
+  return
+}
+```
+
+### Response Validation
+
+The app checks if the API returned any results:
+
+```tsx src/App.tsx
+if (dataOrigen.features.length > 0 && dataDestino.features.length > 0) {
+  // Process coordinates
+} else {
+  alert("No se encontró la ubicación");
+}
+```
+
+### Error Handling
+
+Network errors are caught and logged:
+
+```tsx src/App.tsx
+try {
+  // API calls
+} catch (e) {
+  console.log("Error al encontrar la ubicación: ", e)
+}
+```
+
+<Warning>
+  The current implementation only logs errors to the console without providing user feedback for network failures. Users may not know if a request failed due to network issues.
+</Warning>
+
+## Limitations & Known Issues
+
+<Accordion title="Only returns one result per query">
+  The app uses `limit=1` which means only the first/best match is returned. If the address is ambiguous, the user cannot choose from multiple options.
+</Accordion>
+
+<Accordion title="No autocomplete or suggestions">
+  Users must type complete addresses without real-time suggestions or validation.
+</Accordion>
+
+<Accordion title="Requires city name">
+  The city field is mandatory, which adds friction. The Photon API could potentially geocode addresses without explicit city names.
+</Accordion>
+
+<Accordion title="No loading states">
+  The UI doesn't indicate when geocoding is in progress, which can confuse users on slow connections.
+</Accordion>
+
+<Accordion title="Form clears after submission">
+  After submitting, all input fields are cleared. This makes it difficult to correct typos or modify searches.
+</Accordion>
+
+## Best Practices
+
+<Tip>
+  When entering addresses, include as much detail as possible and ensure the city name is accurate. The more specific your query, the better the geocoding results.
+</Tip>
+
+<Note>
+  The Photon API is free and doesn't require an API key, making it ideal for open-source projects. However, be mindful of rate limits for high-traffic applications.
+</Note>

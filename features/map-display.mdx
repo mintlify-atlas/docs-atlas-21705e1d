@@ -1,0 +1,383 @@
+---
+title: 'Map Display'
+description: 'Learn how Mi Ruta Directa renders interactive maps using Leaflet and React Leaflet'
+---
+
+## Overview
+
+The map display functionality is powered by **Leaflet**, the leading open-source JavaScript mapping library, integrated with React through **React Leaflet**. The `MapaFondo` component serves as the core map container, rendering base tiles, markers, routes, and interactive controls.
+
+## MapaFondo Component
+
+The `MapaFondo` component (`src/components/MapaFondo.tsx`) is the main map implementation.
+
+### Component Props
+
+```tsx src/components/MapaFondo.tsx
+interface MapaFondoProps {
+  datos: RutaDatos
+}
+
+export const MapaFondo = ({ datos }: MapaFondoProps) => {
+  // Component implementation
+}
+```
+
+The component receives route data through the `datos` prop, which includes:
+- Route coordinates (polyline points)
+- Origin marker position
+- Destination marker position
+
+## Map Configuration
+
+### Initial Setup
+
+The `MapContainer` is configured from `MapaFondo.tsx:20-26`:
+
+```tsx src/components/MapaFondo.tsx
+<MapContainer
+  center={[10.9685, -74.7813]}
+  zoom={13}
+  scrollWheelZoom={true}
+  className="h-full w-full"
+  zoomControl={false}
+>
+```
+
+### Configuration Options
+
+| Option | Value | Description |
+|--------|-------|-------------|
+| `center` | `[10.9685, -74.7813]` | Initial map center (Barranquilla, Colombia) |
+| `zoom` | `13` | Initial zoom level (city view) |
+| `scrollWheelZoom` | `true` | Enable mouse wheel zooming |
+| `className` | `"h-full w-full"` | Full-screen map using Tailwind |
+| `zoomControl` | `false` | Hides default zoom buttons |
+
+<Info>
+  The default center coordinates `[10.9685, -74.7813]` point to Barranquilla, Colombia. This makes sense given the Spanish UI and Colombian context of the application.
+</Info>
+
+## Map Tiles
+
+### OpenStreetMap Tiles
+
+The base map uses OpenStreetMap tiles from `MapaFondo.tsx:27-30`:
+
+```tsx src/components/MapaFondo.tsx
+<TileLayer
+  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+  attribution='&copy; OpenStreetMap contributors'
+/>
+```
+
+### Tile URL Parameters
+
+- `{s}`: Subdomain (a, b, or c) for load balancing
+- `{z}`: Zoom level
+- `{x}`: Tile X coordinate
+- `{y}`: Tile Y coordinate
+
+<Note>
+  OpenStreetMap tiles are free to use but have usage policies. For high-traffic applications, consider using a commercial tile provider or hosting your own tile server.
+</Note>
+
+## Markers
+
+### User Location Marker
+
+The user's current location is displayed with a marker from `MapaFondo.tsx:32-36`:
+
+```tsx src/components/MapaFondo.tsx
+{position && (
+  <Marker position={position}>
+    <Popup>Estás aquí</Popup>
+  </Marker>
+)}
+```
+
+- The marker is conditionally rendered only when `position` is available
+- A popup displays "Estás aquí" (You are here) when clicked
+- Position comes from the `useMyLocation` hook
+
+### Origin and Destination Markers
+
+Route endpoints are marked from `MapaFondo.tsx:44-49`:
+
+```tsx src/components/MapaFondo.tsx
+{datos.origen !== null && (
+  <Marker position={datos.origen} />
+)}
+
+{datos.destino !== null && (
+  <Marker position={datos.destino} />
+)}
+```
+
+<Tip>
+  Consider customizing marker icons to differentiate between user location, origin, and destination. Leaflet supports custom icon images through the `icon` prop.
+</Tip>
+
+## Polylines (Routes)
+
+Routes are rendered as blue polylines from `MapaFondo.tsx:40-42`:
+
+```tsx src/components/MapaFondo.tsx
+{datos.coordenadas.length > 0 && (
+  <Polyline positions={datos.coordenadas} color="blue" />
+)}
+```
+
+### Polyline Properties
+
+| Property | Value | Description |
+|----------|-------|-------------|
+| `positions` | `datos.coordenadas` | Array of `[lat, lng]` points |
+| `color` | `"blue"` | Line color |
+
+<CodeGroup>
+```tsx Custom Polyline Styling
+<Polyline 
+  positions={datos.coordenadas} 
+  color="blue"
+  weight={5}
+  opacity={0.7}
+  dashArray="10, 5"
+/>
+```
+
+```tsx Multiple Routes
+<Polyline positions={route1} color="blue" />
+<Polyline positions={route2} color="red" opacity={0.5} />
+<Polyline positions={route3} color="green" dashArray="5, 10" />
+```
+</CodeGroup>
+
+## Map Controls
+
+The component uses two custom map controls imported from `MapaControles.tsx`:
+
+### ObtenerUbicacionUsuario Control
+
+Automatically centers the map on the user's location from `MapaFondo.tsx:38`:
+
+```tsx src/components/MapaFondo.tsx
+<ObtenerUbicacionUsuario position={posicionArray} />
+```
+
+Implementation from `MapaControles.tsx:4-14`:
+
+```tsx src/components/MapaControles.tsx
+export const ObtenerUbicacionUsuario = ({ position }: { position: [number, number] | null }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (position) {
+      map.flyTo(position, 15);
+    }
+  }, [position, map]);
+  
+  return null;
+}
+```
+
+- Uses `map.flyTo()` for smooth animated panning
+- Zooms to level 15 (street view)
+- Triggers when user position becomes available
+
+### EnfocarRuta Control
+
+Automatically fits the map bounds to show the entire route from `MapaFondo.tsx:50`:
+
+```tsx src/components/MapaFondo.tsx
+<EnfocarRuta coordenadas={datos.coordenadas} />
+```
+
+Implementation from `MapaControles.tsx:18-27`:
+
+```tsx src/components/MapaControles.tsx
+export const EnfocarRuta = ({ coordenadas }: { coordenadas: [number, number][] }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (coordenadas.length > 0) {
+      map.fitBounds(coordenadas, { padding: [50, 50] });
+    }
+  }, [coordenadas, map])
+
+  return null;
+}
+```
+
+- Uses `map.fitBounds()` to calculate optimal zoom and center
+- Adds 50px padding on all sides for comfortable viewing
+- Updates whenever route coordinates change
+
+<Info>
+  These controls return `null` because they don't render any visible elements—they only manipulate the map imperatively using Leaflet's API through the `useMap()` hook.
+</Info>
+
+## Leaflet and React Leaflet Integration
+
+### Required Imports
+
+```tsx src/components/MapaFondo.tsx
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+```
+
+### Why Import CSS?
+
+```tsx
+import "leaflet/dist/leaflet.css";
+```
+
+Leaflet's CSS is essential for:
+- Proper map tile rendering
+- Control button styling
+- Marker and popup appearance
+- Zoom animation effects
+
+<Warning>
+  Forgetting to import `leaflet/dist/leaflet.css` will cause visual glitches—tiles may not align, controls may be invisible, and interactions may break.
+</Warning>
+
+## Component Structure
+
+The full component structure from `MapaFondo.tsx:17-54`:
+
+```tsx src/components/MapaFondo.tsx
+return (
+  <>
+    <div className="fixed inset-0 z-0">
+      <MapContainer
+        center={[10.9685, -74.7813]}
+        zoom={13}
+        scrollWheelZoom={true}
+        className="h-full w-full"
+        zoomControl={false}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; OpenStreetMap contributors'
+        />
+
+        {position && (
+          <Marker position={position}>
+            <Popup>Estás aquí</Popup>
+          </Marker>
+        )}
+
+        <ObtenerUbicacionUsuario position={posicionArray} />
+
+        {datos.coordenadas.length > 0 && (
+          <Polyline positions={datos.coordenadas} color="blue" />
+        )}
+
+        {datos.origen !== null && (
+          <Marker position={datos.origen} />
+        )}
+        {datos.destino !== null && (
+          <Marker position={datos.destino} />
+        )}
+        <EnfocarRuta coordenadas={datos.coordenadas} />
+      </MapContainer>
+    </div>
+  </>
+)
+```
+
+### Layout Details
+
+- Wrapped in a `<div className="fixed inset-0 z-0">` for full-screen positioning
+- `z-0` ensures the map stays behind the search form
+- All map elements are children of `MapContainer`
+
+## useMap Hook
+
+React Leaflet provides the `useMap()` hook for accessing the Leaflet map instance:
+
+```tsx
+import { useMap } from "react-leaflet";
+
+const map = useMap();
+```
+
+Common map methods:
+
+| Method | Description | Example |
+|--------|-------------|----------|
+| `flyTo(latlng, zoom)` | Animate to location | `map.flyTo([10, -74], 15)` |
+| `fitBounds(bounds, options)` | Fit to bounds | `map.fitBounds(coords, {padding: [50, 50]})` |
+| `setView(latlng, zoom)` | Jump to location | `map.setView([10, -74], 13)` |
+| `getCenter()` | Get current center | `const center = map.getCenter()` |
+| `getZoom()` | Get current zoom | `const zoom = map.getZoom()` |
+
+<Note>
+  The `useMap()` hook can only be called from components that are children of `MapContainer`. This is why `ObtenerUbicacionUsuario` and `EnfocarRuta` are separate components.
+</Note>
+
+## Responsive Design
+
+The map uses Tailwind classes for full responsiveness:
+
+```tsx
+<div className="fixed inset-0 z-0">
+  <MapContainer className="h-full w-full">
+```
+
+- `fixed inset-0`: Positions map to fill viewport
+- `h-full w-full`: Map container fills parent
+- Works seamlessly across mobile and desktop
+
+## Performance Considerations
+
+<Accordion title="Tile Loading">
+  OpenStreetMap tiles load on-demand as users pan and zoom. On slow connections, tiles may appear with a delay. Consider showing a loading indicator or using a tile cache.
+</Accordion>
+
+<Accordion title="Re-rendering">
+  The `MapContainer` should not be re-rendered unnecessarily. React Leaflet handles updates to child components (Markers, Polylines) efficiently, but recreating the entire map is expensive.
+</Accordion>
+
+<Accordion title="Memory Usage">
+  Large polylines with thousands of coordinate points can impact performance. Consider simplifying routes using algorithms like Douglas-Peucker if needed.
+</Accordion>
+
+## Customization Examples
+
+### Custom Marker Icons
+
+```tsx
+import L from 'leaflet';
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+const customIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
+<Marker position={position} icon={customIcon}>
+  <Popup>Custom marker</Popup>
+</Marker>
+```
+
+### Different Tile Providers
+
+```tsx
+{/* Satellite imagery */}
+<TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
+
+{/* Dark theme */}
+<TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+
+{/* Terrain */}
+<TileLayer url="https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}{r}.png" />
+```
+
+<Tip>
+  Different tile providers offer various styles (satellite, terrain, dark mode). Choose based on your app's aesthetic and functional requirements.
+</Tip>

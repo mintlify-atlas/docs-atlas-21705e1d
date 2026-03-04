@@ -1,0 +1,199 @@
+---
+title: MapaFondo
+description: Componente principal del mapa interactivo que integra Leaflet con React para mostrar rutas, marcadores y la ubicación del usuario
+---
+
+## Descripción General
+
+`MapaFondo` es el componente base del mapa en Mi Ruta Directa. Utiliza React Leaflet para renderizar un mapa interactivo que muestra:
+
+- La ubicación actual del usuario
+- Marcadores de origen y destino
+- Rutas trazadas entre puntos
+- Controles de ubicación y enfoque automático
+
+El componente se renderiza con posición fija en toda la pantalla (`fixed inset-0 z-0`) y sirve como fondo para la aplicación.
+
+## Props
+
+<ParamField path="datos" type="RutaDatos" required>
+  Objeto que contiene la información de la ruta a mostrar en el mapa.
+  
+  ```typescript
+  interface RutaDatos {
+    coordenadas: [number, number][]; // Array de coordenadas [lat, lng]
+    origen: [number, number] | null;  // Punto de origen [lat, lng]
+    destino: [number, number] | null; // Punto de destino [lat, lng]
+  }
+  ```
+</ParamField>
+
+### Interfaz MapaFondoProps
+
+```typescript
+interface MapaFondoProps {
+  datos: RutaDatos
+}
+```
+
+## Configuración del Mapa
+
+El mapa está configurado con los siguientes valores predeterminados:
+
+<ResponseField name="center" type="[number, number]">
+  `[10.9685, -74.7813]` - Coordenadas centrales iniciales (Barranquilla, Colombia)
+</ResponseField>
+
+<ResponseField name="zoom" type="number">
+  `13` - Nivel de zoom inicial
+</ResponseField>
+
+<ResponseField name="scrollWheelZoom" type="boolean">
+  `true` - Permite hacer zoom con la rueda del mouse
+</ResponseField>
+
+<ResponseField name="zoomControl" type="boolean">
+  `false` - Oculta los controles de zoom predeterminados
+</ResponseField>
+
+<ResponseField name="TileLayer URL" type="string">
+  `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png` - Proveedor de tiles OpenStreetMap
+</ResponseField>
+
+## Componentes Hijos
+
+MapaFondo integra varios componentes de React Leaflet:
+
+### TileLayer
+Capa de tiles de OpenStreetMap para renderizar el mapa base.
+
+### Marker
+- **Marcador de Usuario**: Se muestra cuando hay una posición del usuario disponible con un popup "Estás aquí"
+- **Marcador de Origen**: Se muestra cuando `datos.origen` no es null
+- **Marcador de Destino**: Se muestra cuando `datos.destino` no es null
+
+### Popup
+Popup asociado al marcador del usuario que muestra el texto "Estás aquí".
+
+### Polyline
+Línea azul que conecta las coordenadas de la ruta cuando `datos.coordenadas.length > 0`.
+
+### Controles Personalizados
+- **ObtenerUbicacionUsuario**: Centra el mapa en la ubicación del usuario
+- **EnfocarRuta**: Ajusta el mapa para mostrar toda la ruta
+
+## Implementación
+
+```tsx
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import { useMyLocation } from "../hooks/useMyLocation";
+import type { RutaDatos } from "../interface/interfaces";
+import { EnfocarRuta, ObtenerUbicacionUsuario } from "./MapaControles";
+
+interface MapaFondoProps {
+  datos: RutaDatos
+}
+
+export const MapaFondo = ({ datos }: MapaFondoProps) => {
+
+  const { position } = useMyLocation();
+
+  const posicionArray: [number, number] | null = position ? [position.lat, position.lng] : null;
+
+  return (
+    <>
+      <div className="fixed inset-0 z-0">
+        <MapContainer
+          center={[10.9685, -74.7813]}
+          zoom={13}
+          scrollWheelZoom={true}
+          className="h-full w-full"
+          zoomControl={false}
+        >
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; OpenStreetMap contributors'
+          />
+
+          {position && (
+            <Marker position={position}>
+              <Popup>Estás aquí</Popup>
+            </Marker>
+          )}
+
+          <ObtenerUbicacionUsuario position={posicionArray} />
+
+          {datos.coordenadas.length > 0 && (
+            <Polyline positions={datos.coordenadas} color="blue" />
+          )}
+
+          {datos.origen !== null && (
+            <Marker position={datos.origen} />
+          )}
+          {datos.destino !== null && (
+            <Marker position={datos.destino} />
+          )}
+          <EnfocarRuta coordenadas={datos.coordenadas} />
+        </MapContainer>
+      </div>
+    </>
+  )
+}
+```
+
+## Uso
+
+```tsx
+import { MapaFondo } from './components/MapaFondo';
+import type { RutaDatos } from './interface/interfaces';
+
+function App() {
+  const rutaDatos: RutaDatos = {
+    coordenadas: [
+      [10.9685, -74.7813],
+      [10.9700, -74.7850],
+      [10.9750, -74.7900]
+    ],
+    origen: [10.9685, -74.7813],
+    destino: [10.9750, -74.7900]
+  };
+
+  return <MapaFondo datos={rutaDatos} />;
+}
+```
+
+## Detalles de Implementación
+
+### Hook useMyLocation
+
+El componente utiliza el hook personalizado `useMyLocation` para obtener la posición del usuario:
+
+```typescript
+const { position } = useMyLocation();
+// position es de tipo LatLng | null de Leaflet
+```
+
+### Conversión de Posición
+
+La posición del usuario se convierte de `LatLng` a un array de tupla para compatibilidad:
+
+```typescript
+const posicionArray: [number, number] | null = position ? 
+  [position.lat, position.lng] : null;
+```
+
+<Note>
+  El componente renderiza condicionalmente los marcadores y la polilínea basándose en la disponibilidad de datos, asegurando que solo se muestren elementos cuando hay información válida.
+</Note>
+
+## Estilos
+
+El componente utiliza Tailwind CSS para el posicionamiento:
+
+- `fixed inset-0 z-0`: Posiciona el mapa de forma fija cubriendo toda la pantalla con z-index 0
+- `h-full w-full`: El MapContainer ocupa el 100% de altura y ancho de su contenedor
+
+<Tip>
+  Los controles de zoom están deshabilitados (`zoomControl={false}`) para permitir una interfaz personalizada. Puedes habilitar los controles predeterminados cambiando esta prop a `true`.
+</Tip>

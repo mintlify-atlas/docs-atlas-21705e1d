@@ -1,0 +1,271 @@
+---
+title: Installation
+description: Step-by-step guide to install and set up Mi Ruta Directa on your local machine
+---
+
+# Installation Guide
+
+Get Mi Ruta Directa up and running on your local machine in just a few minutes. This guide covers everything from prerequisites to verifying your installation.
+
+## Prerequisites
+
+Before installing Mi Ruta Directa, ensure you have the following installed on your system:
+
+<AccordionGroup>
+  <Accordion title="Node.js" icon="node-js">
+    **Required Version**: Node.js 18.x or higher
+    
+    Mi Ruta Directa uses modern JavaScript features and Vite, which require Node.js 18 or later.
+    
+    Check your Node.js version:
+    ```bash
+    node --version
+    ```
+    
+    If you need to install or upgrade Node.js, download it from [nodejs.org](https://nodejs.org/) or use a version manager like [nvm](https://github.com/nvm-sh/nvm).
+  </Accordion>
+  
+  <Accordion title="Package Manager" icon="box">
+    **Recommended**: npm (comes with Node.js), yarn, or pnpm
+    
+    This guide uses npm, but you can use your preferred package manager:
+    - **npm** - Bundled with Node.js
+    - **yarn** - Install with `npm install -g yarn`
+    - **pnpm** - Install with `npm install -g pnpm`
+  </Accordion>
+  
+  <Accordion title="Git" icon="git-alt">
+    **Required for cloning**: Git version control
+    
+    Check if Git is installed:
+    ```bash
+    git --version
+    ```
+    
+    Download from [git-scm.com](https://git-scm.com/) if needed.
+  </Accordion>
+  
+  <Accordion title="Modern Browser" icon="browser">
+    **Recommended**: Chrome, Firefox, Safari, or Edge (latest version)
+    
+    The application uses modern JavaScript features and the Geolocation API, which are supported in all modern browsers.
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+  Mi Ruta Directa is a client-side application with no backend requirements. You don't need to set up any databases or server infrastructure.
+</Note>
+
+## Installation Steps
+
+<Steps>
+  <Step title="Clone the Repository">
+    Clone the Mi Ruta Directa repository from GitHub to your local machine:
+    
+    ```bash
+    git clone https://github.com/Amurillo2005/Mi-Ruta-Directa
+    ```
+    
+    This creates a new directory called `Mi-Ruta-Directa` with all the project files.
+    
+    <Info>
+      If you don't have Git installed, you can also download the ZIP file from the GitHub repository and extract it.
+    </Info>
+  </Step>
+  
+  <Step title="Navigate to Project Directory">
+    Change into the project directory:
+    
+    ```bash
+    cd Mi-Ruta-Directa
+    ```
+    
+    All subsequent commands should be run from this directory.
+  </Step>
+  
+  <Step title="Install Dependencies">
+    Install all required npm packages using your preferred package manager:
+    
+    <CodeGroup>
+      ```bash npm
+      npm install
+      ```
+      
+      ```bash yarn
+      yarn install
+      ```
+      
+      ```bash pnpm
+      pnpm install
+      ```
+    </CodeGroup>
+    
+    This command installs:
+    - **Production dependencies**: React, Leaflet, Tailwind CSS, and icon libraries
+    - **Development dependencies**: TypeScript, Vite, ESLint, and build tools
+    
+    The installation typically takes 1-2 minutes depending on your internet connection.
+    
+    <Warning>
+      If you encounter permission errors during installation, avoid using `sudo`. Instead, configure npm to use a user-level directory or use a Node version manager like nvm.
+    </Warning>
+  </Step>
+  
+  <Step title="Verify Installation">
+    Verify that all dependencies were installed correctly by checking the `node_modules` directory:
+    
+    ```bash
+    ls node_modules
+    ```
+    
+    You should see directories for all the dependencies including `react`, `leaflet`, `tailwindcss`, and many others.
+    
+    You can also verify specific package versions:
+    
+    ```bash
+    npm list react leaflet vite
+    ```
+    
+    Expected versions:
+    - React: 19.2.0
+    - Leaflet: 1.9.4
+    - Vite: 7.2.4
+  </Step>
+</Steps>
+
+## Project Structure
+
+After installation, your project directory should look like this:
+
+```
+Mi-Ruta-Directa/
+├── node_modules/        # Installed dependencies (git-ignored)
+├── public/              # Static assets
+├── src/                 # Source code
+│   ├── components/      # React components
+│   │   ├── MapaFondo.tsx
+│   │   └── MapaControles.tsx
+│   ├── hooks/          # Custom React hooks
+│   │   └── useMyLocation.ts
+│   ├── interface/      # TypeScript interfaces
+│   │   └── interfaces.ts
+│   ├── App.tsx         # Main application component
+│   ├── main.tsx        # Application entry point
+│   └── index.css       # Global styles
+├── index.html          # HTML template
+├── package.json        # Project dependencies and scripts
+├── tsconfig.json       # TypeScript configuration
+├── vite.config.ts      # Vite build configuration
+└── eslint.config.js    # ESLint configuration
+```
+
+## Available Scripts
+
+Mi Ruta Directa comes with several npm scripts defined in `package.json`:
+
+<CodeGroup>
+  ```bash Development Server
+  npm run dev
+  ```
+  
+  ```bash Production Build
+  npm run build
+  ```
+  
+  ```bash Preview Build
+  npm run preview
+  ```
+  
+  ```bash Lint Code
+  npm run lint
+  ```
+</CodeGroup>
+
+### Script Descriptions
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| `dev` | `vite` | Starts the development server with hot reload |
+| `build` | `tsc -b && vite build` | Compiles TypeScript and builds for production |
+| `preview` | `vite preview` | Previews the production build locally |
+| `lint` | `eslint .` | Runs ESLint to check code quality |
+
+## Environment Considerations
+
+<Note>
+  Mi Ruta Directa requires **browser geolocation permissions** to display your current location on the map. When you first run the app, your browser will prompt you to allow location access.
+</Note>
+
+### HTTPS Requirement for Geolocation
+
+The Geolocation API requires a secure context (HTTPS) in production. During development:
+
+- **localhost** is considered secure, so geolocation works without HTTPS
+- In production, you'll need to deploy to an HTTPS domain
+
+### API Dependencies
+
+Mi Ruta Directa uses external APIs that require internet connectivity:
+
+- **Photon API** (`https://photon.komoot.io`) - Address geocoding
+- **OSRM API** (`https://router.project-osrm.org`) - Route calculation
+- **OpenStreetMap tiles** (`https://tile.openstreetmap.org`) - Map rendering
+
+<Warning>
+  These public APIs are rate-limited. For production use with high traffic, consider self-hosting these services or using alternative providers.
+</Warning>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="npm install fails with permission errors">
+    **Solution**: Use a Node version manager (nvm) or configure npm to use a user directory:
+    
+    ```bash
+    mkdir ~/.npm-global
+    npm config set prefix '~/.npm-global'
+    export PATH=~/.npm-global/bin:$PATH
+    ```
+  </Accordion>
+  
+  <Accordion title="Port 5173 is already in use">
+    **Solution**: Vite's default port (5173) is already in use. Either:
+    
+    1. Stop the process using port 5173
+    2. Or specify a different port:
+    ```bash
+    npm run dev -- --port 3000
+    ```
+  </Accordion>
+  
+  <Accordion title="TypeScript errors during installation">
+    **Solution**: Ensure you have compatible versions:
+    
+    ```bash
+    npm install typescript@~5.9.3 --save-dev
+    ```
+  </Accordion>
+  
+  <Accordion title="Module not found errors">
+    **Solution**: Clear cache and reinstall:
+    
+    ```bash
+    rm -rf node_modules package-lock.json
+    npm install
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<Check>
+  **Installation Complete!** You're ready to start the development server and calculate your first route.
+</Check>
+
+<Card title="Quick Start Guide" icon="rocket" href="/quickstart">
+  Learn how to start the development server and calculate your first route in under 5 minutes
+</Card>
+
+<Tip>
+  Before moving on, make sure your installation is working by running `npm run dev` and checking that the development server starts without errors.
+</Tip>

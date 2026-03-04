@@ -1,80 +1,441 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick Start
+description: Get from zero to your first calculated route in under 5 minutes
 ---
 
-## Get started in three steps
+# Quick Start Guide
 
-Get your documentation site running locally and make your first customization.
+This guide will walk you through starting Mi Ruta Directa and calculating your first route. In less than 5 minutes, you'll have a fully functional routing application running on your machine.
 
-### Step 1: Set up your local environment
+<Info>
+  Before starting, make sure you've completed the [installation guide](/installation) and have all dependencies installed.
+</Info>
+
+## Start Your First Route
+
+<Steps>
+  <Step title="Start the Development Server">
+    Navigate to your project directory and start the Vite development server:
+    
+    <CodeGroup>
+      ```bash npm
+      npm run dev
+      ```
+      
+      ```bash yarn
+      yarn dev
+      ```
+      
+      ```bash pnpm
+      pnpm dev
+      ```
+    </CodeGroup>
+    
+    You should see output similar to:
+    
+    ```bash
+    VITE v7.2.4  ready in 325 ms
+    
+    ➜  Local:   http://localhost:5173/
+    ➜  Network: use --host to expose
+    ➜  press h + enter to show help
+    ```
+    
+    <Note>
+      The development server starts on **port 5173** by default. If this port is in use, Vite will automatically try the next available port.
+    </Note>
+    
+    The development server includes:
+    - **Hot Module Replacement (HMR)** - Changes appear instantly without full page reload
+    - **Fast Refresh** - React components update while preserving state
+    - **TypeScript checking** - Real-time type error detection
+  </Step>
+  
+  <Step title="Open the Application">
+    Open your web browser and navigate to:
+    
+    ```
+    http://localhost:5173
+    ```
+    
+    You should see the Mi Ruta Directa interface with:
+    - An interactive map centered on default coordinates (Barranquilla, Colombia)
+    - A search form at the top with three input fields: Origin, Destination, and City
+    - A "Buscar" (Search) button
+    
+    <Tip>
+      When you first load the page, your browser will ask for **location permission**. Allow this to see your current location marked on the map.
+    </Tip>
+    
+    ### What You Should See
+    
+    **Search Form**: Located at the top of the screen with three inputs:
+    - **Origin** (MapPin icon) - Starting address
+    - **Destination** (Navigation icon) - Ending address  
+    - **City** (Building icon) - City name for better geocoding accuracy
+    
+    **Map View**: An interactive OpenStreetMap showing:
+    - Default center location or your current location
+    - Zoom and pan controls
+    - Full-screen capability
+  </Step>
+  
+  <Step title="Calculate Your First Route">
+    Let's calculate a route between two locations. Enter the following example addresses:
+    
+    <CodeGroup>
+      ```text Example 1: Barranquilla, Colombia
+      Origin: Calle 72 #50-50
+      Destination: Calle 85 #50-20
+      City: Barranquilla
+      ```
+      
+      ```text Example 2: Bogotá, Colombia  
+      Origin: Carrera 7 #32-16
+      Destination: Calle 26 #13-19
+      City: Bogotá
+      ```
+      
+      ```text Example 3: Any City
+      Origin: [Your starting address]
+      Destination: [Your ending address]
+      City: [Your city name]
+      ```
+    </CodeGroup>
+    
+    Click the **"Buscar"** (Search) button to calculate the route.
+    
+    ### What Happens Behind the Scenes
+    
+    When you click "Buscar", the application:
+    
+    1. **Validates inputs** - Ensures all three fields are filled
+    2. **Geocodes addresses** - Converts text addresses to coordinates using Photon API:
+       ```typescript
+       const origenSeguro = encodeURIComponent(direccionOrigen);
+       const resOrigen = await fetch(
+         `https://photon.komoot.io/api/?q=${origenSeguro},${ciudad}&limit=1`
+       );
+       ```
+    3. **Calculates route** - Sends coordinates to OSRM for route calculation:
+       ```typescript
+       const resRuta = await fetch(
+         `https://router.project-osrm.org/route/v1/driving/${lonO},${latO};${lonD},${latD}?overview=full&geometries=geojson`
+       );
+       ```
+    4. **Renders on map** - Displays the route as a blue polyline with markers
+  </Step>
+  
+  <Step title="View Your Route">
+    After clicking "Buscar", you should see:
+    
+    **Route Visualization**:
+    - A **blue polyline** showing the calculated route between locations
+    - **Markers** at the origin and destination points
+    - The map automatically **zooms and pans** to fit the entire route in view
+    
+    **Auto-Fit Behavior**:
+    The map uses Leaflet's `fitBounds` to ensure the entire route is visible:
+    ```typescript
+    map.fitBounds(coordenadas, { padding: [50, 50] });
+    ```
+    
+    <Note>
+      The route is calculated using OpenStreetMap data and optimized for driving. The blue line represents the recommended path.
+    </Note>
+    
+    ### Interacting with the Map
+    
+    You can now:
+    - **Pan** - Click and drag to move the map
+    - **Zoom** - Use mouse wheel or pinch gestures
+    - **Click markers** - View popup information (if available)
+    - **View your location** - See a marker showing where you are
+  </Step>
+  
+  <Step title="Calculate Another Route">
+    The form inputs are cleared after each search. To calculate another route:
+    
+    1. Enter new origin, destination, and city
+    2. Click "Buscar" again
+    3. The map updates with the new route
+    
+    <Tip>
+      Each new route calculation replaces the previous one. The map automatically adjusts to show the new route in full view.
+    </Tip>
+  </Step>
+</Steps>
+
+## Understanding the Application
+
+### Component Architecture
+
+Mi Ruta Directa uses a clean component structure:
+
+```typescript
+// Main App Component (App.tsx)
+function App() {
+  const [direccionOrigen, setDireccionOrigen] = useState<string>("");
+  const [direccionDestino, setDireccionDestino] = useState<string>("");
+  const [ciudad, setCiudad] = useState<string>("");
+  const [datosRuta, setDatosRuta] = useState<RutaDatos>({
+    coordenadas: [],
+    origen: null,
+    destino: null,
+  });
+  
+  // Form submission handler
+  const handleSubmit = async (e: React.FormEvent) => {
+    // Geocode addresses and calculate route
+  };
+  
+  return (
+    <>
+      <MapaFondo datos={datosRuta} />
+      <form onSubmit={handleSubmit}>
+        {/* Input fields */}
+      </form>
+    </>
+  );
+}
+```
+
+### Key Features in Action
 
 <AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+  <Accordion title="Automatic Location Detection" icon="location-crosshairs">
+    The `useMyLocation` hook automatically requests your browser location:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
+    ```typescript
+    // hooks/useMyLocation.ts
+    export const useMyLocation = () => {
+      const [position, setPosition] = useState<LatLng | null>(null);
+      
+      useEffect(() => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude, longitude } = pos.coords;
+            setPosition(new LatLng(latitude, longitude));
+          },
+          () => alert("No se pudo obtener tu ubicación"),
+          {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+          }
+        );
+      }, []);
+      
+      return { position };
+    };
+    ```
   </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+  
+  <Accordion title="Route Rendering" icon="route">
+    Routes are rendered using React Leaflet's Polyline component:
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
+    ```typescript
+    // components/MapaFondo.tsx
+    {datos.coordenadas.length > 0 && (
+      <Polyline positions={datos.coordenadas} color="blue" />
+    )}
+    
+    {datos.origen !== null && (
+      <Marker position={datos.origen} />
+    )}
+    {datos.destino !== null && (
+      <Marker position={datos.destino} />
+    )}
+    ```
+  </Accordion>
+  
+  <Accordion title="Type-Safe Data Structures" icon="code">
+    TypeScript interfaces ensure type safety:
+    
+    ```typescript
+    // interface/interfaces.ts
+    export interface RutaDatos {
+      coordenadas: [number, number][]; 
+      origen: [number, number] | null;
+      destino: [number, number] | null;
+    }
+    
+    export interface ResultadoPhoton {
+      features: {
+        geometry: {
+          coordinates: [number, number];
+        };
+        properties: {
+          name: string;
+          city?: string;
+          state?: string;
+          country?: string;
+        };
+      }[];
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Responsive Design" icon="mobile">
+    The UI is fully responsive using Tailwind CSS:
+    
+    ```typescript
+    <form className="absolute top-6 md:top-10 left-1/2 -translate-x-1/2 z-20 
+                     flex flex-col md:flex-row items-center justify-center 
+                     gap-3 md:gap-2 w-[92%] md:w-fit max-w-6xl p-3 md:p-2 
+                     bg-gray-400 rounded-3xl shadow-2xl">
+      {/* Stacks vertically on mobile, horizontally on desktop */}
+    </form>
+    ```
   </Accordion>
 </AccordionGroup>
 
-### Step 2: Deploy your changes
+## Common Issues and Solutions
+
+<Warning>
+  **"No se encontró la ubicación"** - This alert appears when the Photon API cannot find the addresses you entered.
+</Warning>
 
 <AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+  <Accordion title='"No se encontró la ubicación" Error'>
+    **Causes**:
+    - Addresses are too vague or incomplete
+    - City name doesn't match the address
+    - Photon API has no data for that location
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
+    **Solutions**:
+    - Be more specific with addresses (include street numbers)
+    - Verify the city name is correct
+    - Try major landmarks or well-known addresses
+    - Use full street names (e.g., "Carrera" not "Cra")
+  </Accordion>
+  
+  <Accordion title="Location Permission Denied">
+    **Symptoms**: Alert saying "No se pudo obtener tu ubicación"
+    
+    **Solution**: Grant location permission in your browser:
+    - Click the location icon in the address bar
+    - Select "Allow" for location access
+    - Refresh the page
+  </Accordion>
+  
+  <Accordion title="Map Doesn't Load">
+    **Possible causes**:
+    - No internet connection (OpenStreetMap tiles require connectivity)
+    - Browser blocks external resources
+    - Leaflet CSS not loaded
+    
+    **Solutions**:
+    - Check your internet connection
+    - Disable browser extensions that block resources
+    - Open browser console (F12) to check for errors
+  </Accordion>
+  
+  <Accordion title="Route Shows But Seems Inaccurate">
+    **Known limitations** (as noted in README):
+    - Addresses sometimes appear near but not exact
+    - Destination may be placed in a different city
+    - Photon geocoding has varying accuracy by region
+    
+    **Workarounds**:
+    - Use more specific addresses
+    - Include nearby landmarks in your search
+    - Try alternative address formats
   </Accordion>
 </AccordionGroup>
 
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
+## Development Tips
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Hot Reload" icon="fire">
+    Make changes to any `.tsx` or `.ts` file and see them instantly reflected in the browser without losing application state.
+  </Card>
+  
+  <Card title="TypeScript Checking" icon="check">
+    The development server runs TypeScript checks in the background. Check your terminal for type errors.
+  </Card>
+  
+  <Card title="Browser DevTools" icon="browser">
+    Press F12 to open DevTools and view:
+    - Console logs
+    - Network requests to Photon/OSRM
+    - React component hierarchy
+  </Card>
+  
+  <Card title="Code Linting" icon="wand-magic-sparkles">
+    Run `npm run lint` to check code quality and catch potential issues before they become bugs.
+  </Card>
 </CardGroup>
 
+## Next Steps
+
+<Check>
+  **Congratulations!** You've successfully calculated your first route with Mi Ruta Directa.
+</Check>
+
+Now that you have the basics working, explore more:
+
+<CardGroup cols={2}>
+  <Card title="Components" icon="puzzle-piece" href="/components/mapa-fondo">
+    Deep dive into the component architecture and create custom map controls
+  </Card>
+  
+  <Card title="API Integration" icon="plug" href="/api/photon">
+    Understand how Photon and OSRM APIs work and their integration
+  </Card>
+  
+  <Card title="Architecture" icon="diagram-project" href="/development/architecture">
+    Learn about the application structure and design principles
+  </Card>
+  
+  <Card title="Technologies" icon="code" href="/development/technologies">
+    Explore the technology stack and dependencies in detail
+  </Card>
+</CardGroup>
+
+<Tip>
+  **Pro Tip**: Keep the development server running while you work. It automatically rebuilds when you make changes, making development fast and efficient.
+</Tip>
+
+## Example Workflows
+
+### Daily Development Workflow
+
+```bash
+# Start your day
+cd Mi-Ruta-Directa
+npm run dev
+
+# Make changes to components
+# Changes appear instantly in browser
+
+# Check for errors
+npm run lint
+
+# Build for production when ready
+npm run build
+```
+
+### Testing Different Routes
+
+1. Keep a list of test addresses for your region
+2. Test edge cases (very short routes, very long routes)
+3. Verify route accuracy using known paths
+4. Test on different devices (mobile, tablet, desktop)
+
+<Info>
+  The application clears form inputs after each search. This is intentional to make it easy to enter multiple routes quickly.
+</Info>
+
+## Getting Help
+
+If you encounter issues:
+
+1. Check the browser console (F12) for errors
+2. Review the [troubleshooting section](#common-issues-and-solutions) above
+3. Check the terminal where `npm run dev` is running
+4. Visit the [GitHub repository](https://github.com/Amurillo2005/Mi-Ruta-Directa) for issues and discussions
+
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Remember: Mi Ruta Directa uses public APIs that may have rate limits or occasional downtime. If routes aren't calculating, check your internet connection and try again in a moment.
 </Note>

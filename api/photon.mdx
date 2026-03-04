@@ -1,0 +1,218 @@
+---
+title: 'Photon Geocoding API'
+description: 'Learn how Mi Ruta Directa uses Photon API to convert addresses into geographic coordinates'
+---
+
+## Overview
+
+Mi Ruta Directa uses the [Photon geocoding API](https://photon.komoot.io) by Komoot to convert user-entered addresses into latitude and longitude coordinates. Photon is a free, open-source geocoding service built on OpenStreetMap data.
+
+## API Endpoint
+
+The application uses Photon's search endpoint:
+
+```
+GET https://photon.komoot.io/api/
+```
+
+## Request Parameters
+
+<ParamField query="q" type="string" required>
+  The search query containing the address and city. The application encodes the origin or destination address combined with the city name.
+  
+  **Example:** `Calle 123, Bogotá`
+</ParamField>
+
+<ParamField query="limit" type="number" default="1">
+  Maximum number of results to return. The application sets this to `1` to get only the best match.
+</ParamField>
+
+## Address Encoding
+
+Addresses are URL-encoded before being sent to the API to handle special characters:
+
+```typescript
+const origenSeguro = encodeURIComponent(direccionOrigen);
+const destinoSeguro = encodeURIComponent(direccionDestino);
+
+const resOrigen = await fetch(
+  `https://photon.komoot.io/api/?q=${origenSeguro},${ciudad}&limit=1`
+);
+```
+
+<Note>
+  The application combines the user's address input with the city name using a comma separator: `{address},{city}`
+</Note>
+
+## Response Structure
+
+Photon returns a GeoJSON FeatureCollection. The application uses a TypeScript interface to handle the response:
+
+```typescript
+interface ResultadoPhoton {
+  features: {
+    geometry: {
+      coordinates: [number, number];
+    };
+    properties: {
+      name: string;
+      city?: string;
+      state?: string;
+      country?: string;
+    };
+  }[];
+}
+```
+
+### Response Fields
+
+<ResponseField name="features" type="array">
+  Array of location results matching the search query
+  
+  <Expandable title="Feature object structure">
+    <ResponseField name="geometry" type="object">
+      Contains the geographic coordinates
+      
+      <ResponseField name="coordinates" type="[number, number]">
+        Array with `[longitude, latitude]` format
+        
+        <Warning>
+          Note that Photon returns coordinates in `[longitude, latitude]` order, not the typical `[latitude, longitude]` used by many mapping libraries.
+        </Warning>
+      </ResponseField>
+    </ResponseField>
+    
+    <ResponseField name="properties" type="object">
+      Metadata about the location
+      
+      <ResponseField name="name" type="string">
+        The name of the location
+      </ResponseField>
+      
+      <ResponseField name="city" type="string" optional>
+        The city name
+      </ResponseField>
+      
+      <ResponseField name="state" type="string" optional>
+        The state or province
+      </ResponseField>
+      
+      <ResponseField name="country" type="string" optional>
+        The country name
+      </ResponseField>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Response
+
+```json
+{
+  "features": [
+    {
+      "geometry": {
+        "coordinates": [-74.0721, 4.7110],
+        "type": "Point"
+      },
+      "properties": {
+        "name": "Calle 123",
+        "city": "Bogotá",
+        "state": "Cundinamarca",
+        "country": "Colombia"
+      },
+      "type": "Feature"
+    }
+  ]
+}
+```
+
+## Usage in Application
+
+The application makes two geocoding requests (origin and destination) when the user submits the form:
+
+<CodeGroup>
+```typescript App.tsx (Lines 26-34)
+const origenSeguro = encodeURIComponent(direccionOrigen);
+const destinoSeguro = encodeURIComponent(direccionDestino);
+
+try {
+  const resOrigen = await fetch(
+    `https://photon.komoot.io/api/?q=${origenSeguro},${ciudad}&limit=1`
+  );
+  const dataOrigen: ResultadoPhoton = await resOrigen.json();
+
+  const resDestino = await fetch(
+    `https://photon.komoot.io/api/?q=${destinoSeguro},${ciudad}&limit=1`
+  );
+  const dataDestino: ResultadoPhoton = await resDestino.json();
+```
+</CodeGroup>
+
+### Extracting Coordinates
+
+After receiving the response, the application extracts the coordinates:
+
+```typescript
+if (dataOrigen.features.length > 0 && dataDestino.features.length > 0) {
+  const [lonO, latO] = dataOrigen.features[0].geometry.coordinates;
+  const [lonD, latD] = dataDestino.features[0].geometry.coordinates;
+  
+  // Coordinates are then used for routing...
+}
+```
+
+See App.tsx:36-39 for the coordinate extraction implementation.
+
+## Error Handling
+
+The application implements basic error handling:
+
+### No Results Found
+
+```typescript
+if (dataOrigen.features.length > 0 && dataDestino.features.length > 0) {
+  // Process results
+} else {
+  alert("No se encontró la ubicación");
+}
+```
+
+### Network Errors
+
+```typescript
+try {
+  // API calls
+} catch (e) {
+  console.log("Error al encontrar la ubicación: ", e);
+}
+```
+
+See App.tsx:55-57 for error handling implementation.
+
+## Known Limitations
+
+<Warning>
+  The application documentation notes several limitations with address geocoding:
+  
+  - **Address Not Found:** Many addresses are not found in the database
+  - **Approximate Location:** Some addresses return nearby locations instead of exact matches
+  - **Wrong City:** Destination addresses sometimes resolve to a different city than intended
+  
+  These limitations are inherent to the OpenStreetMap data coverage and the geocoding algorithm.
+</Warning>
+
+## Best Practices
+
+<Card title="Tips for Better Results" icon="lightbulb">
+  - Always include the city name with the address
+  - Use complete street names when possible
+  - Check that `features.length > 0` before accessing results
+  - Handle cases where no results are returned
+  - URL-encode all user input to prevent malformed requests
+</Card>
+
+## Related Resources
+
+- [OSRM Routing API](/api/osrm) - Used after geocoding to calculate routes
+- [Map Display](/features/map-display) - How coordinates are displayed on the map
+- [Photon API Documentation](https://photon.komoot.io/) - Official Photon documentation

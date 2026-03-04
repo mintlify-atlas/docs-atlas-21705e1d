@@ -1,0 +1,248 @@
+---
+title: MapaControles
+description: Componentes de control para el mapa que gestionan la ubicación del usuario y el enfoque automático de rutas
+---
+
+## Descripción General
+
+`MapaControles` es un módulo que exporta dos componentes de control para React Leaflet:
+
+1. **ObtenerUbicacionUsuario**: Centra automáticamente el mapa en la ubicación del usuario
+2. **EnfocarRuta**: Ajusta la vista del mapa para mostrar toda la ruta trazada
+
+Estos componentes son "headless" (no tienen UI visual) y utilizan el hook `useMap` de React Leaflet para interactuar con la instancia del mapa.
+
+## ObtenerUbicacionUsuario
+
+### Descripción
+
+Componente que observa la posición del usuario y centra el mapa automáticamente cuando la ubicación está disponible, utilizando una animación suave (`flyTo`).
+
+### Props
+
+<ParamField path="position" type="[number, number] | null" required>
+  Coordenadas de la ubicación del usuario en formato `[latitud, longitud]`. 
+  
+  - Si es `null`, el componente no realiza ninguna acción
+  - Si contiene coordenadas válidas, el mapa se centra en esa posición con zoom 15
+</ParamField>
+
+### Implementación
+
+```tsx
+import { useMap } from "react-leaflet";
+import { useEffect } from "react";
+
+export const ObtenerUbicacionUsuario = ({ position }: { position: [number, number] | null }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (position) {
+      map.flyTo(position, 15);
+    }
+  }, [position, map]);
+  
+  return null;
+}
+```
+
+### Comportamiento
+
+- **Animación**: Utiliza `map.flyTo()` para una transición suave en lugar de un salto instantáneo
+- **Zoom**: Establece el nivel de zoom en `15` cuando centra en la ubicación del usuario
+- **Reactivo**: Se ejecuta cada vez que `position` cambia gracias al `useEffect`
+
+### Uso
+
+```tsx
+import { MapContainer, TileLayer } from "react-leaflet";
+import { ObtenerUbicacionUsuario } from "./MapaControles";
+import { useMyLocation } from "../hooks/useMyLocation";
+
+function MiMapa() {
+  const { position } = useMyLocation();
+  
+  const posicionArray: [number, number] | null = position ? 
+    [position.lat, position.lng] : null;
+
+  return (
+    <MapContainer center={[10.9685, -74.7813]} zoom={13}>
+      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <ObtenerUbicacionUsuario position={posicionArray} />
+    </MapContainer>
+  );
+}
+```
+
+<Note>
+  Este componente debe estar dentro de un `MapContainer` de React Leaflet para que `useMap()` funcione correctamente.
+</Note>
+
+## EnfocarRuta
+
+### Descripción
+
+Componente que ajusta automáticamente los límites del mapa para mostrar todas las coordenadas de una ruta, asegurando que el usuario pueda ver el recorrido completo.
+
+### Props
+
+<ParamField path="coordenadas" type="[number, number][]" required>
+  Array de coordenadas que forman la ruta en formato `[latitud, longitud][]`.
+  
+  - Si el array está vacío, no se realiza ninguna acción
+  - Si contiene coordenadas, el mapa ajusta su vista para mostrar todos los puntos con padding
+</ParamField>
+
+### Implementación
+
+```tsx
+import { useMap } from "react-leaflet";
+import { useEffect } from "react";
+
+export const EnfocarRuta = ({ coordenadas }: { coordenadas: [number, number][] }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (coordenadas.length > 0) {
+      map.fitBounds(coordenadas, { padding: [50, 50] });
+    }
+  }, [coordenadas, map])
+
+  return null;
+}
+```
+
+### Comportamiento
+
+- **fitBounds**: Calcula automáticamente el zoom y centro óptimos para mostrar todas las coordenadas
+- **Padding**: Añade 50 píxeles de margen en todos los lados para que la ruta no esté pegada a los bordes
+- **Reactivo**: Se ejecuta cada vez que el array de `coordenadas` cambia
+- **Validación**: Solo actúa si hay al menos una coordenada en el array
+
+### Uso
+
+```tsx
+import { MapContainer, TileLayer, Polyline } from "react-leaflet";
+import { EnfocarRuta } from "./MapaControles";
+
+function MapaRuta() {
+  const rutaCoordenadas: [number, number][] = [
+    [10.9685, -74.7813],
+    [10.9700, -74.7850],
+    [10.9750, -74.7900]
+  ];
+
+  return (
+    <MapContainer center={[10.9685, -74.7813]} zoom={13}>
+      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <Polyline positions={rutaCoordenadas} color="blue" />
+      <EnfocarRuta coordenadas={rutaCoordenadas} />
+    </MapContainer>
+  );
+}
+```
+
+## Uso Combinado
+
+Ambos componentes se pueden usar simultáneamente en el mismo mapa:
+
+```tsx
+import { MapContainer, TileLayer, Marker, Polyline } from "react-leaflet";
+import { ObtenerUbicacionUsuario, EnfocarRuta } from "./MapaControles";
+import { useMyLocation } from "../hooks/useMyLocation";
+import type { RutaDatos } from "../interface/interfaces";
+
+function MapaCompleto({ datos }: { datos: RutaDatos }) {
+  const { position } = useMyLocation();
+  const posicionArray: [number, number] | null = position ? 
+    [position.lat, position.lng] : null;
+
+  return (
+    <MapContainer 
+      center={[10.9685, -74.7813]} 
+      zoom={13}
+      className="h-full w-full"
+    >
+      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      
+      {/* Marcador de usuario */}
+      {position && <Marker position={position} />}
+      
+      {/* Ruta */}
+      {datos.coordenadas.length > 0 && (
+        <Polyline positions={datos.coordenadas} color="blue" />
+      )}
+      
+      {/* Controles */}
+      <ObtenerUbicacionUsuario position={posicionArray} />
+      <EnfocarRuta coordenadas={datos.coordenadas} />
+    </MapContainer>
+  );
+}
+```
+
+<Tip>
+  Cuando ambos controles están activos, `EnfocarRuta` generalmente tiene prioridad si las coordenadas cambian después de obtener la ubicación del usuario, ya que ambos usan `useEffect` y React ejecuta los efectos en orden.
+</Tip>
+
+## Detalles Técnicos
+
+### Hook useMap
+
+Ambos componentes utilizan el hook `useMap` de React Leaflet:
+
+```typescript
+const map = useMap();
+```
+
+Este hook proporciona acceso a la instancia del mapa de Leaflet, permitiendo llamar métodos como:
+- `map.flyTo(position, zoom)` - Vuela suavemente a una posición
+- `map.fitBounds(bounds, options)` - Ajusta la vista para mostrar límites específicos
+
+### Componentes sin Renderizado
+
+Ambos componentes retornan `null` porque no necesitan renderizar nada en el DOM:
+
+```typescript
+return null;
+```
+
+Son componentes de "efecto secundario" que solo manipulan el mapa a través de la API de Leaflet.
+
+<Note>
+  Estos componentes deben montarse dentro de un `MapContainer` de React Leaflet. Si se usan fuera de este contexto, `useMap()` lanzará un error.
+</Note>
+
+## Personalización
+
+### Ajustar el Zoom de Usuario
+
+Puedes modificar el nivel de zoom cuando se centra en el usuario:
+
+```tsx
+map.flyTo(position, 18); // Más cerca
+map.flyTo(position, 12); // Más lejos
+```
+
+### Ajustar el Padding de Ruta
+
+Puedes cambiar el margen alrededor de la ruta:
+
+```tsx
+// Más margen
+map.fitBounds(coordenadas, { padding: [100, 100] });
+
+// Margen asimétrico [vertical, horizontal]
+map.fitBounds(coordenadas, { padding: [50, 100] });
+```
+
+### Opciones Adicionales de fitBounds
+
+```tsx
+map.fitBounds(coordenadas, {
+  padding: [50, 50],
+  maxZoom: 16,        // Zoom máximo permitido
+  animate: true,      // Animar la transición
+  duration: 1.0       // Duración de la animación en segundos
+});
+```

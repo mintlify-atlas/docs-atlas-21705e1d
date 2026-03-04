@@ -1,0 +1,537 @@
+---
+title: 'Technology Stack'
+description: 'Complete overview of technologies, frameworks, and tools used in Mi Ruta Directa'
+---
+
+## Core Technologies
+
+Mi Ruta Directa is built with modern web technologies optimized for performance and developer experience.
+
+<CardGroup cols={2}>
+  <Card title="React 19.2.0" icon="react" color="#61dafb">
+    Latest React with concurrent features and improved performance
+  </Card>
+  
+  <Card title="TypeScript 5.9.3" icon="code" color="#3178c6">
+    Type-safe development with strict type checking
+  </Card>
+  
+  <Card title="Vite 7.2.4" icon="bolt" color="#646cff">
+    Lightning-fast build tool with HMR
+  </Card>
+  
+  <Card title="Tailwind CSS 4.1.18" icon="palette" color="#06b6d4">
+    Utility-first CSS framework for rapid UI development
+  </Card>
+</CardGroup>
+
+## Frontend Framework
+
+### React + TypeScript
+
+**Version:** React 19.2.0 | TypeScript 5.9.3
+
+The application leverages React 19's latest features:
+
+```json
+// package.json
+"dependencies": {
+  "react": "^19.2.0",
+  "react-dom": "^19.2.0"
+},
+"devDependencies": {
+  "@types/react": "^19.2.5",
+  "@types/react-dom": "^19.2.3",
+  "typescript": "~5.9.3"
+}
+```
+
+<Info>
+  React 19 includes automatic batching, improved hydration, and concurrent rendering capabilities for better performance.
+</Info>
+
+**TypeScript Configuration:**
+- Strict mode enabled
+- Module resolution: Bundler
+- Target: ES2020+
+- JSX: react-jsx
+
+## Mapping Libraries
+
+### Leaflet + React Leaflet
+
+**Versions:**
+- `leaflet`: 1.9.4
+- `react-leaflet`: 5.0.0
+- `@types/leaflet`: 1.9.21
+
+```json
+"dependencies": {
+  "leaflet": "^1.9.4",
+  "react-leaflet": "^5.0.0"
+},
+"devDependencies": {
+  "@types/leaflet": "^1.9.21"
+}
+```
+
+**Key Features Used:**
+
+<AccordionGroup>
+  <Accordion title="MapContainer">
+    Core container for the map instance.
+    
+    ```tsx
+    <MapContainer
+      center={[10.9685, -74.7813]}
+      zoom={13}
+      scrollWheelZoom={true}
+      className="h-full w-full"
+      zoomControl={false}
+    >
+    ```
+    
+    Used in: `src/components/MapaFondo.tsx:20-26`
+  </Accordion>
+  
+  <Accordion title="TileLayer">
+    OpenStreetMap tile layer for the base map.
+    
+    ```tsx
+    <TileLayer
+      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      attribution='&copy; OpenStreetMap contributors'
+    />
+    ```
+    
+    Used in: `src/components/MapaFondo.tsx:27-30`
+  </Accordion>
+  
+  <Accordion title="Marker & Popup">
+    Interactive markers for locations.
+    
+    ```tsx
+    <Marker position={position}>
+      <Popup>Estás aquí</Popup>
+    </Marker>
+    ```
+    
+    Used in: `src/components/MapaFondo.tsx:33-35`
+  </Accordion>
+  
+  <Accordion title="Polyline">
+    Route path visualization.
+    
+    ```tsx
+    <Polyline positions={datos.coordenadas} color="blue" />
+    ```
+    
+    Used in: `src/components/MapaFondo.tsx:41`
+  </Accordion>
+  
+  <Accordion title="useMap Hook">
+    Access map instance for programmatic control.
+    
+    ```tsx
+    const map = useMap();
+    map.flyTo(position, 15);
+    map.fitBounds(coordenadas, { padding: [50, 50] });
+    ```
+    
+    Used in: `src/components/MapaControles.tsx`
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+  Leaflet CSS must be imported: `import "leaflet/dist/leaflet.css"` for proper marker and popup styling.
+</Note>
+
+## Styling Framework
+
+### Tailwind CSS v4
+
+**Version:** 4.1.18 (with Vite plugin)
+
+```json
+"dependencies": {
+  "@tailwindcss/vite": "^4.1.18",
+  "tailwindcss": "^4.1.18"
+}
+```
+
+**Vite Integration:**
+
+```typescript
+// vite.config.ts
+import tailwindcss from '@tailwindcss/vite'
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+})
+```
+
+**Usage Examples:**
+
+<CodeGroup>
+```tsx Form Inputs
+<input 
+  className="w-full p-3 pl-11 bg-white rounded-full 
+             placeholder-gray-700 focus:outline-none 
+             focus:ring-2 focus:ring-blue-500"
+  type="text" 
+  placeholder="Origen"
+/>
+```
+
+```tsx Responsive Layout
+<form className="absolute top-6 md:top-10 left-1/2 -translate-x-1/2 
+                 z-20 flex flex-col md:flex-row items-center 
+                 gap-3 md:gap-2 w-[92%] md:w-fit max-w-6xl 
+                 p-3 md:p-2 bg-gray-400 rounded-3xl shadow-2xl">
+```
+
+```tsx Button Styling
+<button className="w-full md:w-auto px-8 py-3 bg-white 
+                   text-gray-700 rounded-full md:rounded-2xl 
+                   hover:bg-gray-600 hover:text-white 
+                   transition-colors duration-500 
+                   active:scale-95 cursor-pointer">
+  Buscar
+</button>
+```
+</CodeGroup>
+
+<Info>
+  The application uses Tailwind v4's new Vite plugin for automatic CSS processing without a separate config file.
+</Info>
+
+## Build Tool
+
+### Vite 7.2.4
+
+**Configuration:**
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react-swc'
+import tailwindcss from '@tailwindcss/vite'
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+})
+```
+
+**Features:**
+- ⚡ Instant server start with native ESM
+- 🔥 Hot Module Replacement (HMR)
+- 📦 Optimized production builds
+- 🚀 SWC compiler for faster builds
+
+**Plugins Used:**
+
+<CardGroup cols={2}>
+  <Card title="@vitejs/plugin-react-swc" icon="react">
+    **Version:** 4.2.2
+    
+    Uses SWC instead of Babel for 20x faster compilation
+  </Card>
+  
+  <Card title="@tailwindcss/vite" icon="wind">
+    **Version:** 4.1.18
+    
+    Automatic Tailwind CSS processing during build
+  </Card>
+</CardGroup>
+
+**NPM Scripts:**
+
+```json
+"scripts": {
+  "dev": "vite",                    // Start dev server
+  "build": "tsc -b && vite build",  // Type check + build
+  "lint": "eslint .",               // Run linter
+  "preview": "vite preview"         // Preview production build
+}
+```
+
+## Icon Library
+
+### Lucide React
+
+**Version:** 0.563.0
+
+```json
+"dependencies": {
+  "lucide-react": "^0.563.0"
+}
+```
+
+**Icons Used:**
+
+```tsx
+import { MapPin, Navigation, Building2 } from "lucide-react"
+
+// Origin input
+<MapPin size={18} />
+
+// Destination input
+<Navigation size={18} className="rotate-90" />
+
+// City input
+<Building2 size={18} />
+```
+
+Used in: `src/App.tsx:1,73,79,85`
+
+<Note>
+  Lucide provides 1000+ consistent, customizable SVG icons optimized for React.
+</Note>
+
+## Development Tools
+
+### ESLint Configuration
+
+**Version:** 9.39.1
+
+```javascript
+// eslint.config.js
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import tseslint from 'typescript-eslint'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommended,
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+    },
+  },
+])
+```
+
+**Plugins:**
+
+<AccordionGroup>
+  <Accordion title="eslint-plugin-react-hooks (v7.0.1)">
+    Enforces React Hooks rules:
+    - Hooks only called at top level
+    - Hooks only called in React functions
+    - Correct dependency arrays
+  </Accordion>
+  
+  <Accordion title="eslint-plugin-react-refresh (v0.4.24)">
+    Ensures components can be safely hot-reloaded:
+    - Only exports React components
+    - Compatible with Fast Refresh
+  </Accordion>
+  
+  <Accordion title="typescript-eslint (v8.46.4)">
+    TypeScript-specific linting rules:
+    - Type-aware linting
+    - Recommended TypeScript rules
+  </Accordion>
+</AccordionGroup>
+
+### TypeScript Type Definitions
+
+```json
+"devDependencies": {
+  "@types/leaflet": "^1.9.21",
+  "@types/node": "^24.10.1",
+  "@types/react": "^19.2.5",
+  "@types/react-dom": "^19.2.3"
+}
+```
+
+## External APIs
+
+The application integrates with two public APIs:
+
+<CardGroup cols={2}>
+  <Card title="Photon Geocoding API" icon="map-location-dot">
+    **Provider:** Komoot
+    
+    **Base URL:** `https://photon.komoot.io/api/`
+    
+    **Purpose:** Convert street addresses to coordinates
+    
+    **Features:**
+    - Free, no API key required
+    - OpenStreetMap data
+    - Supports multiple languages
+    
+    **Usage:**
+    ```typescript
+    const res = await fetch(
+      `https://photon.komoot.io/api/?q=${address},${city}&limit=1`
+    );
+    ```
+  </Card>
+  
+  <Card title="OSRM Routing API" icon="route">
+    **Provider:** Project OSRM
+    
+    **Base URL:** `https://router.project-osrm.org/`
+    
+    **Purpose:** Calculate driving routes between coordinates
+    
+    **Features:**
+    - Free, open-source routing
+    - Based on OpenStreetMap data
+    - Returns GeoJSON geometry
+    
+    **Usage:**
+    ```typescript
+    const res = await fetch(
+      `https://router.project-osrm.org/route/v1/driving/
+      ${lon1},${lat1};${lon2},${lat2}?
+      overview=full&geometries=geojson`
+    );
+    ```
+  </Card>
+</CardGroup>
+
+<Warning>
+  Both APIs are public services without authentication. They may have:
+  - Rate limiting
+  - Availability constraints
+  - Data accuracy limitations
+  
+  See [Known Issues](/development/known-issues) for details.
+</Warning>
+
+## Browser APIs
+
+### Geolocation API
+
+Used in `useMyLocation` hook:
+
+```typescript
+navigator.geolocation.getCurrentPosition(
+  (pos) => {
+    const { latitude, longitude } = pos.coords;
+    setPosition(new LatLng(latitude, longitude));
+  },
+  () => alert("No se pudo obtener tu ubicación"),
+  {
+    enableHighAccuracy: true,  // GPS if available
+    timeout: 5000,             // 5-second timeout
+    maximumAge: 0              // Don't use cached position
+  }
+);
+```
+
+**Browser Support:**
+- Chrome/Edge: ✅ Full support
+- Firefox: ✅ Full support
+- Safari: ✅ Full support (requires HTTPS)
+
+<Info>
+  Geolocation requires HTTPS in production and user permission to access location.
+</Info>
+
+## Dependencies Summary
+
+### Production Dependencies
+
+```json
+{
+  "@tailwindcss/vite": "^4.1.18",
+  "leaflet": "^1.9.4",
+  "lucide-react": "^0.563.0",
+  "react": "^19.2.0",
+  "react-dom": "^19.2.0",
+  "react-leaflet": "^5.0.0",
+  "tailwindcss": "^4.1.18"
+}
+```
+
+**Total:** 7 dependencies
+
+### Development Dependencies
+
+```json
+{
+  "@eslint/js": "^9.39.1",
+  "@types/leaflet": "^1.9.21",
+  "@types/node": "^24.10.1",
+  "@types/react": "^19.2.5",
+  "@types/react-dom": "^19.2.3",
+  "@vitejs/plugin-react-swc": "^4.2.2",
+  "eslint": "^9.39.1",
+  "eslint-plugin-react-hooks": "^7.0.1",
+  "eslint-plugin-react-refresh": "^0.4.24",
+  "globals": "^16.5.0",
+  "typescript": "~5.9.3",
+  "typescript-eslint": "^8.46.4",
+  "vite": "^7.2.4"
+}
+```
+
+**Total:** 13 dev dependencies
+
+<Note>
+  The application maintains a lean dependency tree with only essential packages for optimal bundle size.
+</Note>
+
+## Technology Choices
+
+### Why These Technologies?
+
+<AccordionGroup>
+  <Accordion title="React 19 - Latest Features">
+    - Concurrent rendering for better UX
+    - Automatic batching reduces re-renders
+    - Improved hydration
+    - Future-proof with latest React patterns
+  </Accordion>
+  
+  <Accordion title="TypeScript - Type Safety">
+    - Catch errors at compile time
+    - Better IDE autocomplete
+    - Self-documenting code with interfaces
+    - Easier refactoring
+  </Accordion>
+  
+  <Accordion title="Vite - Fast Development">
+    - Instant server start (vs. webpack)
+    - Lightning-fast HMR
+    - SWC compiler for 20x faster builds
+    - Optimized production bundles
+  </Accordion>
+  
+  <Accordion title="Tailwind v4 - Rapid UI Development">
+    - Utility-first approach
+    - No context switching between files
+    - Built-in responsive design
+    - Smaller bundle with JIT compiler
+  </Accordion>
+  
+  <Accordion title="Leaflet - Open Source Mapping">
+    - Lightweight (39KB gzipped)
+    - No API keys required
+    - Extensive plugin ecosystem
+    - Mobile-friendly
+  </Accordion>
+</AccordionGroup>
+
+## Version Compatibility
+
+<Warning>
+  **Important:** This project uses React 19 which is relatively new. Ensure all libraries are compatible:
+  
+  ✅ react-leaflet 5.0.0 - Compatible
+  ✅ lucide-react 0.563.0 - Compatible
+  ✅ Tailwind CSS 4.1.18 - Compatible
+</Warning>

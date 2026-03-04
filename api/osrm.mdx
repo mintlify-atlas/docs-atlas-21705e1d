@@ -1,0 +1,293 @@
+---
+title: 'OSRM Routing API'
+description: 'Learn how Mi Ruta Directa uses OSRM to calculate driving routes between coordinates'
+---
+
+## Overview
+
+Mi Ruta Directa uses the [OSRM (Open Source Routing Machine)](http://project-osrm.org/) API to calculate optimal driving routes between two geographic points. OSRM is a high-performance routing engine that uses OpenStreetMap data.
+
+## API Endpoint
+
+The application uses OSRM's routing service endpoint:
+
+```
+GET https://router.project-osrm.org/route/v1/driving/{coordinates}
+```
+
+## Request Format
+
+### URL Structure
+
+```
+https://router.project-osrm.org/route/v1/driving/{lon1},{lat1};{lon2},{lat2}?overview=full&geometries=geojson
+```
+
+### Coordinates
+
+Coordinates must be provided in `longitude,latitude` format, separated by semicolons for multiple points:
+
+```typescript
+const [lonO, latO] = dataOrigen.features[0].geometry.coordinates;
+const [lonD, latD] = dataDestino.features[0].geometry.coordinates;
+
+const resRuta = await fetch(
+  `https://router.project-osrm.org/route/v1/driving/${lonO},${latO};${lonD},${latD}?overview=full&geometries=geojson`
+);
+```
+
+See App.tsx:38-40 for the routing request implementation.
+
+<Note>
+  OSRM expects coordinates in `longitude,latitude` order, which matches the format returned by the Photon API.
+</Note>
+
+## Query Parameters
+
+<ParamField query="overview" type="string" default="simplified">
+  Controls the level of detail in the route geometry.
+  
+  **Values:**
+  - `full` - Returns all coordinates along the route (used by the app)
+  - `simplified` - Returns a simplified version
+  - `false` - Returns no geometry
+</ParamField>
+
+<ParamField query="geometries" type="string" default="polyline">
+  Format of the route geometry in the response.
+  
+  **Values:**
+  - `geojson` - GeoJSON format (used by the app)
+  - `polyline` - Encoded polyline
+  - `polyline6` - Encoded polyline with 6 decimal precision
+</ParamField>
+
+## Response Structure
+
+The OSRM API returns a JSON object with routing information:
+
+```json
+{
+  "code": "Ok",
+  "routes": [
+    {
+      "geometry": {
+        "coordinates": [
+          [-74.0721, 4.7110],
+          [-74.0722, 4.7115],
+          [-74.0725, 4.7120]
+        ],
+        "type": "LineString"
+      },
+      "legs": [...],
+      "distance": 5420.3,
+      "duration": 892.1
+    }
+  ],
+  "waypoints": [...]
+}
+```
+
+### Response Fields
+
+<ResponseField name="code" type="string">
+  Status code of the response. `"Ok"` indicates success.
+</ResponseField>
+
+<ResponseField name="routes" type="array">
+  Array of calculated routes (usually contains one route)
+  
+  <Expandable title="Route object structure">
+    <ResponseField name="geometry" type="object">
+      GeoJSON geometry containing the route path
+      
+      <ResponseField name="coordinates" type="array">
+        Array of `[longitude, latitude]` coordinate pairs defining the route
+        
+        <Warning>
+          OSRM returns coordinates in `[longitude, latitude]` format, but Leaflet (the mapping library) expects `[latitude, longitude]`. The application must convert these coordinates.
+        </Warning>
+      </ResponseField>
+      
+      <ResponseField name="type" type="string">
+        GeoJSON geometry type, always `"LineString"` for routes
+      </ResponseField>
+    </ResponseField>
+    
+    <ResponseField name="distance" type="number">
+      Total route distance in meters
+    </ResponseField>
+    
+    <ResponseField name="duration" type="number">
+      Estimated travel time in seconds
+    </ResponseField>
+    
+    <ResponseField name="legs" type="array">
+      Array of route segments between waypoints
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="waypoints" type="array">
+  Information about the start and end points used for routing
+</ResponseField>
+
+## Coordinate Conversion
+
+Since OSRM returns coordinates in `[longitude, latitude]` format but Leaflet requires `[latitude, longitude]`, the application performs a conversion:
+
+```typescript
+if (datosRuta.routes && datosRuta.routes.length > 0) {
+  const ruta = datosRuta.routes[0];
+  const coordenadasRuta = ruta.geometry.coordinates.map(
+    (coord: [number, number]) => [coord[1], coord[0]]
+  );
+  
+  setDatosRuta({
+    coordenadas: coordenadasRuta,
+    origen: [latO, lonO],
+    destino: [latD, lonD]
+  });
+}
+```
+
+See App.tsx:42-49 for the coordinate conversion implementation.
+
+<Note>
+  The `map` function swaps `[lon, lat]` to `[lat, lon]` by accessing indices in reverse order: `[coord[1], coord[0]]`
+</Note>
+
+## Usage in Application
+
+The complete routing workflow in the application:
+
+<Steps>
+  <Step title="Geocode addresses">
+    Convert origin and destination addresses to coordinates using Photon API
+  </Step>
+  
+  <Step title="Request route">
+    Send coordinates to OSRM API to calculate the route
+    
+    ```typescript
+    const resRuta = await fetch(
+      `https://router.project-osrm.org/route/v1/driving/${lonO},${latO};${lonD},${latD}?overview=full&geometries=geojson`
+    );
+    const datosRuta = await resRuta.json();
+    ```
+  </Step>
+  
+  <Step title="Convert coordinates">
+    Transform OSRM's `[lon, lat]` format to Leaflet's `[lat, lon]` format
+  </Step>
+  
+  <Step title="Update state">
+    Store the converted coordinates and endpoint locations in React state
+    
+    ```typescript
+    setDatosRuta({
+      coordenadas: coordenadasRuta,
+      origen: [latO, lonO],
+      destino: [latD, lonD]
+    });
+    ```
+  </Step>
+</Steps>
+
+## Route Visualization
+
+The route data is passed to the `MapaFondo` component for visualization:
+
+```typescript
+interface RutaDatos {
+  coordenadas: [number, number][]; // Route path coordinates
+  origen: [number, number] | null;  // Origin point [lat, lon]
+  destino: [number, number] | null; // Destination point [lat, lon]
+}
+
+<MapaFondo datos={datosRuta} />
+```
+
+The `coordenadas` array contains all points along the route, while `origen` and `destino` mark the start and end points.
+
+## Error Handling
+
+The application checks for successful routing:
+
+```typescript
+if (datosRuta.routes && datosRuta.routes.length > 0) {
+  // Process route
+} else {
+  // No route found - handled implicitly
+}
+```
+
+See App.tsx:42 for route validation.
+
+<Warning>
+  The current implementation doesn't explicitly alert the user if routing fails. If `routes` is empty or undefined, the map simply won't update with a new route.
+</Warning>
+
+## Complete Example
+
+Here's the full routing flow from the application:
+
+<CodeGroup>
+```typescript App.tsx (Lines 29-50)
+try {
+  // Geocode origin and destination
+  const resOrigen = await fetch(
+    `https://photon.komoot.io/api/?q=${origenSeguro},${ciudad}&limit=1`
+  );
+  const dataOrigen: ResultadoPhoton = await resOrigen.json();
+
+  const resDestino = await fetch(
+    `https://photon.komoot.io/api/?q=${destinoSeguro},${ciudad}&limit=1`
+  );
+  const dataDestino: ResultadoPhoton = await resDestino.json();
+
+  if (dataOrigen.features.length > 0 && dataDestino.features.length > 0) {
+    // Extract coordinates from geocoding results
+    const [lonO, latO] = dataOrigen.features[0].geometry.coordinates;
+    const [lonD, latD] = dataDestino.features[0].geometry.coordinates;
+    
+    // Request route from OSRM
+    const resRuta = await fetch(
+      `https://router.project-osrm.org/route/v1/driving/${lonO},${latO};${lonD},${latD}?overview=full&geometries=geojson`
+    );
+    const datosRuta = await resRuta.json();
+    
+    // Process and convert coordinates
+    if (datosRuta.routes && datosRuta.routes.length > 0) {
+      const ruta = datosRuta.routes[0];
+      const coordenadasRuta = ruta.geometry.coordinates.map(
+        (coord: [number, number]) => [coord[1], coord[0]]
+      );
+      
+      setDatosRuta({
+        coordenadas: coordenadasRuta,
+        origen: [latO, lonO],
+        destino: [latD, lonD]
+      });
+    }
+  }
+} catch (e) {
+  console.log("Error al encontrar la ubicación: ", e);
+}
+```
+</CodeGroup>
+
+## Performance Considerations
+
+<Card title="OSRM Performance" icon="gauge">
+  - OSRM is extremely fast, typically responding in under 100ms
+  - The public demo server is free but may have rate limits
+  - For production use, consider hosting your own OSRM instance
+  - The `overview=full` parameter returns all route coordinates, which may be large for long routes
+</Card>
+
+## Related Resources
+
+- [Photon Geocoding API](/api/photon) - Used before routing to get coordinates
+- [Map Display](/features/map-display) - How routes are displayed on the map
+- [OSRM API Documentation](http://project-osrm.org/docs/v5.24.0/api/) - Official OSRM documentation
